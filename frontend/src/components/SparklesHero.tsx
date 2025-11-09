@@ -2,7 +2,7 @@
 import React from "react";
 import { SparklesCore } from "./ui/sparkles";
 
-export function SparklesPreview() {
+export function SparklesHero() {
   return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center overflow-hidden rounded-md">
       <h1 className="md:text-7xl text-3xl lg:text-7xl font-bold text-center text-white relative z-20">

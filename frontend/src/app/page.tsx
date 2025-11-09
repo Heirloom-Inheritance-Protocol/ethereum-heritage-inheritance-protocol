@@ -1,5 +1,5 @@
-import { SparklesPreview } from "@/components/SparklesPreview";
+import { SparklesHero } from "@/components/SparklesHero";
 
 export default function Home() {
-  return <SparklesPreview />;
+  return <SparklesHero />;
 }
