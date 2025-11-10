@@ -2,6 +2,48 @@ import { BackgroundLinesHero } from "@/components/BackgroundHero";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ScrollIndicator } from "@/components/ui/scroll-indicator";
 
+interface FooterLink {
+  href: string;
+  label: string;
+}
+
+const footerLinks: FooterLink[] = [
+  { href: "#about", label: "About" },
+  { href: "#content", label: "How It Works" },
+  { href: "#contact", label: "Contact" },
+];
+
+function Footer() {
+  return (
+    <footer className="bg-neutral-900 text-neutral-200">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-lg font-semibold">Heirloom Inheritance Protocol</p>
+          <p className="mt-2 text-sm text-neutral-400">
+            Preserving legacies with encrypted, on-chain stewardship.
+          </p>
+        </div>
+        <nav className="flex flex-wrap items-center gap-4 text-sm text-neutral-300">
+          {footerLinks.map((link) => (
+            <a key={link.href} href={link.href} className="hover:text-white">
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+      <div className="border-t border-neutral-800">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            &copy; {new Date().getFullYear()} Invisible Garden. All rights
+            reserved.
+          </p>
+          <p>Crafted with security, continuity, and care.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 export default function Home() {
   return (
     <>
@@ -65,6 +107,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </>
   );
 }
