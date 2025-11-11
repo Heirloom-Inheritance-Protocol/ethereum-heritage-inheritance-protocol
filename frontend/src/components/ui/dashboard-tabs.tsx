@@ -50,7 +50,7 @@ export function DashboardTabs({
           </button>
         ))}
       </div>
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 dark:bg-neutral-900">
+      <div className="w-full rounded-2xl bg-white p-6 dark:bg-neutral-900">
         {activeContent}
       </div>
     </div>
