@@ -1,6 +1,7 @@
 "use client";
 
 import { JSX, useState } from "react";
+import { usePrivy } from "@privy-io/react-auth";
 
 import { cn } from "@/lib/utils";
 import { SuccessModal } from "@/components/ui/success-modal";
@@ -27,6 +28,7 @@ const TAG_TYPES = ["recipe", "handcraft"] as const;
 export function InheritanceForm({
   className,
 }: InheritanceFormProps): JSX.Element {
+  const { user } = usePrivy();
   const [selectedTag, setSelectedTag] = useState<string>("");
   const [successorWallet, setSuccessorWallet] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -102,10 +104,16 @@ export function InheritanceForm({
     }
   }
 
+  const currentWalletAddress = user?.wallet?.address?.toLowerCase();
+  const isSameAsCurrentWallet =
+    currentWalletAddress &&
+    successorWallet.toLowerCase() === currentWalletAddress;
+
   const isFormValid =
     successorWallet.trim() !== "" &&
     selectedFile !== null &&
-    selectedTag !== "";
+    selectedTag !== "" &&
+    !isSameAsCurrentWallet;
 
   return (
     <>
@@ -138,14 +146,26 @@ export function InheritanceForm({
             value={successorWallet}
             onChange={(event) => setSuccessorWallet(event.target.value)}
             placeholder="0x..."
-            className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:border-neutral-600 dark:bg-white/10 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+            className={cn(
+              "w-full rounded-xl border bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm transition focus:outline-none focus:ring-2 dark:bg-white/10 dark:text-white dark:placeholder:text-neutral-400",
+              isSameAsCurrentWallet
+                ? "border-red-500 focus:border-red-500 focus:ring-red-300 dark:border-red-500 dark:focus:border-red-500 dark:focus:ring-red-700"
+                : "border-neutral-200 focus:border-neutral-400 focus:ring-neutral-300 dark:border-neutral-600 dark:focus:border-neutral-500 dark:focus:ring-neutral-700",
+            )}
             aria-label="Successor wallet address"
             name="successorWallet"
             required
           />
-          <p className="text-xs text-neutral-600 dark:text-neutral-200">
-            The wallet address that will inherit this data
-          </p>
+          {isSameAsCurrentWallet ? (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              ⚠️ You cannot set your own wallet address as the successor. Please
+              use a different address.
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-600 dark:text-neutral-200">
+              The wallet address that will inherit this data
+            </p>
+          )}
         </label>
 
         <div className="space-y-2">
