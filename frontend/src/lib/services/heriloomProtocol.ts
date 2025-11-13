@@ -180,3 +180,50 @@ export async function getOwnerInheritances(
     (inheritance) => inheritance.ipfsHash !== "0" && inheritance.ipfsHash !== "",
   );
 }
+
+/**
+ * Fetches all inheritances where the address is the successor (beneficiary)
+ * @param successorAddress The address of the successor
+ * @returns Array of inheritance data, filtered to exclude deleted ones
+ */
+export async function getSuccessorInheritances(
+  successorAddress: `0x${string}`,
+): Promise<InheritanceData[]> {
+  // Get array of inheritance IDs where the address is the successor
+  const inheritanceIds = (await publicClient.readContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: CONTRACT_ABI,
+    functionName: "getSuccessorInheritances",
+    args: [successorAddress],
+  })) as bigint[];
+
+  // Fetch details for each inheritance
+  const inheritancePromises = inheritanceIds.map(async (id) => {
+    const data = (await publicClient.readContract({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: CONTRACT_ABI,
+      functionName: "getInheritance",
+      args: [id],
+    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean];
+
+    return {
+      id,
+      owner: data[0],
+      successor: data[1],
+      ipfsHash: data[2],
+      tag: data[3],
+      fileName: data[4],
+      fileSize: data[5],
+      timestamp: data[6],
+      isActive: data[7],
+      isClaimed: data[8],
+    };
+  });
+
+  const allInheritances = await Promise.all(inheritancePromises);
+
+  // Filter out deleted inheritances (ipfsHash === "0")
+  return allInheritances.filter(
+    (inheritance) => inheritance.ipfsHash !== "0" && inheritance.ipfsHash !== "",
+  );
+}
