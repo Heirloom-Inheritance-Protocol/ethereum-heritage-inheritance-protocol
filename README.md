@@ -18,9 +18,6 @@ arg25-projects/
 # Heritage Inheritance Protocol  
 *A tool for securely passing cultural assets or secret knowledge across generations.*
 
-Welcome to Invisible Garden – ARG25.  
-This README documents our project and weekly progress.
-
 ---
 
 # Project Title  
