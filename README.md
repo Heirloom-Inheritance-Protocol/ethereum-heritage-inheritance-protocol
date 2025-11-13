@@ -29,10 +29,11 @@ Short concept: A tool that allows people who wish to preserve cultural assets or
 
 # Team  
 **Team/Individual Name:**  
+- Keita Kuroiwa, Dario Macs
 **GitHub Handles:**  
+- cruujon, DaroMacs
 **Devfolio Handles:**  
-Roles (optional): Smart Contract / Product / Design / Infra
-
+- cruujon, daro_macs
 ---
 
 # Project Description
