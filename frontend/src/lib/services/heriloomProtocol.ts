@@ -94,6 +94,47 @@ export async function createInheritance({
 }
 
 /**
+ * Deletes an inheritance from the blockchain
+ * @param inheritanceId The ID of the inheritance to delete
+ * @returns The transaction hash
+ */
+export async function deleteInheritance(
+  inheritanceId: bigint,
+): Promise<`0x${string}`> {
+  const { walletClient, address } = await getWalletClient();
+
+  // Check if wallet is on the correct chain
+  const chainId = await walletClient.getChainId();
+  if (chainId !== sepolia.id) {
+    try {
+      // Request chain switch
+      await walletClient.switchChain({ id: sepolia.id });
+    } catch {
+      throw new Error(
+        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+      );
+    }
+  }
+
+  // Simulate the transaction to check for errors
+  const { request } = await publicClient.simulateContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: CONTRACT_ABI,
+    functionName: "deleteInheritance",
+    args: [inheritanceId],
+    account: address,
+  });
+
+  // Execute the transaction
+  const hash = await walletClient.writeContract(request);
+
+  // Wait for the transaction to be mined
+  await publicClient.waitForTransactionReceipt({ hash });
+
+  return hash;
+}
+
+/**
  * Fetches all inheritances owned by a specific address
  * @param ownerAddress The address of the owner
  * @returns Array of inheritance data, filtered to exclude deleted ones

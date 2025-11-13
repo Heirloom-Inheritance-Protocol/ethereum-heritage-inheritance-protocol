@@ -4,6 +4,7 @@ import { JSX, useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   getOwnerInheritances,
+  deleteInheritance,
   InheritanceData,
 } from "@/lib/services/heriloomProtocol";
 
@@ -13,6 +14,7 @@ export function ReceivedInheritances(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<bigint | null>(null);
 
   // Fetch inheritances from blockchain
   useEffect(() => {
@@ -67,6 +69,48 @@ export function ReceivedInheritances(): JSX.Element {
 
   function getIpfsUrl(ipfsHash: string): string {
     return `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+  }
+
+  function splitFileName(fileName: string): {
+    name: string;
+    extension: string;
+  } {
+    const lastDotIndex = fileName.lastIndexOf(".");
+    if (lastDotIndex === -1) {
+      return { name: fileName, extension: "" };
+    }
+    return {
+      name: fileName.substring(0, lastDotIndex),
+      extension: fileName.substring(lastDotIndex),
+    };
+  }
+
+  async function handleDelete(inheritanceId: bigint) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this inheritance? This action cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingId(inheritanceId);
+      await deleteInheritance(inheritanceId);
+
+      // Remove the deleted inheritance from the list
+      setInheritances((prev) =>
+        prev.filter((inheritance) => inheritance.id !== inheritanceId),
+      );
+    } catch (error) {
+      console.error("Error deleting inheritance:", error);
+      alert(
+        "Failed to delete inheritance. Please try again. Error: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   if (loading) {
@@ -170,7 +214,7 @@ export function ReceivedInheritances(): JSX.Element {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-neutral-200/50 bg-white/40 dark:border-neutral-700/50 dark:bg-white/5">
-                  <th className="w-[28%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                  <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     File
                   </th>
                   <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
@@ -182,7 +226,7 @@ export function ReceivedInheritances(): JSX.Element {
                   <th className="w-[8%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Size
                   </th>
-                  <th className="w-[15%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                  <th className="w-[18%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Tags
                   </th>
                   <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
@@ -200,7 +244,7 @@ export function ReceivedInheritances(): JSX.Element {
                     className="bg-transparent transition hover:bg-white/40 dark:hover:bg-white/10"
                   >
                     <td className="px-4 py-5">
-                      <div className="flex items-center gap-2 overflow-hidden">
+                      <div className="flex items-center gap-2 min-w-0">
                         <svg
                           className="h-5 w-5 shrink-0 text-red-500"
                           fill="currentColor"
@@ -209,9 +253,14 @@ export function ReceivedInheritances(): JSX.Element {
                           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
                           <path d="M14 2v6h6" fill="white" />
                         </svg>
-                        <span className="truncate text-sm font-normal text-neutral-900 dark:text-white">
-                          {inheritance.fileName}
-                        </span>
+                        <div className="flex items-center min-w-0 text-sm font-normal text-neutral-900 dark:text-white">
+                          <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                            {splitFileName(inheritance.fileName).name}
+                          </span>
+                          <span className="shrink-0">
+                            {splitFileName(inheritance.fileName).extension}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-5">
@@ -337,6 +386,30 @@ export function ReceivedInheritances(): JSX.Element {
                           </svg>
                           Download
                         </a>
+                        <button
+                          onClick={() => handleDelete(inheritance.id)}
+                          disabled={deletingId === inheritance.id}
+                          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600 cursor-pointer"
+                          aria-label="Delete inheritance"
+                        >
+                          {deletingId === inheritance.id ? (
+                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          ) : (
+                            <svg
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     </td>
                   </tr>

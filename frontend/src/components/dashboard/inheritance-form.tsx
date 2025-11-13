@@ -59,6 +59,7 @@ export function InheritanceForm({
   >("idle");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successAsset, setSuccessAsset] = useState<Asset | null>(null);
+  const [loadingInheritances, setLoadingInheritances] = useState(false);
 
   // Fetch inheritances from blockchain
   useEffect(() => {
@@ -68,12 +69,15 @@ export function InheritanceForm({
       }
 
       try {
+        setLoadingInheritances(true);
         const data = await getOwnerInheritances(
           user.wallet.address as `0x${string}`,
         );
         setInheritances(data);
       } catch (error) {
         console.error("Error fetching inheritances:", error);
+      } finally {
+        setLoadingInheritances(false);
       }
     }
 
@@ -131,10 +135,15 @@ export function InheritanceForm({
 
       // Refresh inheritances from blockchain
       if (user?.wallet?.address) {
-        const updatedInheritances = await getOwnerInheritances(
-          user.wallet.address as `0x${string}`,
-        );
-        setInheritances(updatedInheritances);
+        setLoadingInheritances(true);
+        try {
+          const updatedInheritances = await getOwnerInheritances(
+            user.wallet.address as `0x${string}`,
+          );
+          setInheritances(updatedInheritances);
+        } finally {
+          setLoadingInheritances(false);
+        }
       }
 
       // Create asset object for success modal
@@ -295,60 +304,73 @@ export function InheritanceForm({
               : "Create Inheritance"}
           </button>
 
-          {inheritances.length > 0 && (
+          {(loadingInheritances || inheritances.length > 0) && (
             <div className="mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 Created Inheritances ({inheritances.length})
               </h3>
-              <div className="space-y-3">
-                {inheritances.map((inheritance) => (
-                  <div
-                    key={inheritance.id.toString()}
-                    className="rounded-xl bg-white/50 p-4 shadow-sm dark:bg-white/5"
-                  >
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                      {inheritance.fileName}
+              {loadingInheritances ? (
+                <div className="flex items-center justify-center rounded-xl bg-white/50 p-8 dark:bg-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900 dark:border-neutral-700 dark:border-t-white" />
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                      Loading inheritances...
                     </p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                      Successor: {inheritance.successor}
-                    </p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                      Tag: {inheritance.tag}
-                    </p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                      Size:{" "}
-                      {(Number(inheritance.fileSize) / 1024 / 1024).toFixed(2)}{" "}
-                      MB
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
-                          inheritance.isClaimed
-                            ? "bg-orange-50 text-orange-700 ring-orange-600/20 dark:bg-orange-900/20 dark:text-orange-400 dark:ring-orange-400/30"
-                            : inheritance.isActive
-                            ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-400/30"
-                            : "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-400/30",
-                        )}
-                      >
-                        {inheritance.isClaimed
-                          ? "Claimed"
-                          : inheritance.isActive
-                          ? "Available"
-                          : "Revoked"}
-                      </span>
-                      <a
-                        href={`https://gateway.pinata.cloud/ipfs/${inheritance.ipfsHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        View on IPFS →
-                      </a>
-                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {inheritances.map((inheritance) => (
+                    <div
+                      key={inheritance.id.toString()}
+                      className="rounded-xl bg-white/50 p-4 shadow-sm dark:bg-white/5"
+                    >
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                        {inheritance.fileName}
+                      </p>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-300">
+                        Successor: {inheritance.successor}
+                      </p>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-300">
+                        Tag: {inheritance.tag}
+                      </p>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-300">
+                        Size:{" "}
+                        {(Number(inheritance.fileSize) / 1024 / 1024).toFixed(
+                          2,
+                        )}{" "}
+                        MB
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
+                            inheritance.isClaimed
+                              ? "bg-orange-50 text-orange-700 ring-orange-600/20 dark:bg-orange-900/20 dark:text-orange-400 dark:ring-orange-400/30"
+                              : inheritance.isActive
+                              ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-400/30"
+                              : "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-400/30",
+                          )}
+                        >
+                          {inheritance.isClaimed
+                            ? "Claimed"
+                            : inheritance.isActive
+                            ? "Available"
+                            : "Revoked"}
+                        </span>
+                        <a
+                          href={`https://gateway.pinata.cloud/ipfs/${inheritance.ipfsHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          View on IPFS →
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </form>
