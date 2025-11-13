@@ -15,412 +15,305 @@ arg25-projects/
 └── 
 ```
 
-# Heirloom Inheritance Protocol — MVP Build Doc latest ver.
+# Heritage Inheritance Protocol  
+*A tool for securely passing cultural assets or secret knowledge across generations.*
 
-## 0) One-line Purpose
-
-Build a **minimal product** that makes *who passed which secret to whom* verifiable on-chain, while keeping the **actual content encrypted** so that **only the giver and the successor** can read it at each hand-off.
-
-- Public: lineage (`from → to`), content hash/commitment, timestamps
-- Private: the content itself (files/text), decryption keys
+Welcome to Invisible Garden – ARG25.  
+This README documents our project and weekly progress.
 
 ---
 
-## 1) Design Principles
+# Project Title  
+**Heritage Inheritance Protocol**
 
-1. **Separation of concerns**
-    - On-chain → verifiable **facts** (registration, inheritance, timestamps)
-    - Off-chain → **encrypted content** storage (IPFS)
-    - Client → **key generation, encryption/decryption, bundle creation**
-2. **Minimal dependencies (hackathon-friendly)**
-    - Next.js + wagmi + Web Crypto + IPFS; no mandatory messaging layer
-3. **Interoperable evidence**
-    - EAS attestations for **tagging the inheritance type** and enabling **cross-protocol / external** references
+Short concept: A tool that allows people who wish to preserve cultural assets or secret knowledge to securely and permanently pass them down to others across generations.
 
 ---
 
-## 2) System Overview (in words)
-
-- **Frontend (Next.js 14 + TypeScript)**
-    
-    Wallet connect (RainbowKit / wagmi + viem), client-side crypto (Web Crypto + libsodium), IPFS client, QR/download payload hand-off, lineage view.
-    
-- **On-chain (Arbitrum Stylus / Rust, required)**
-    
-    `Registry` contract with `register_secret` and `inherit` functions; emits `SecretRegistered` and `Inherited` events.
-    
-- **Storage (IPFS)**
-    
-    Stores **ciphertext** only; on-chain stores `cidHash = keccak256(cid)`.
-
-    
+# Team  
+**Team/Individual Name:**  
+**GitHub Handles:**  
+**Devfolio Handles:**  
+Roles (optional): Smart Contract / Product / Design / Infra
 
 ---
 
-## 3) Tech Stack and Roles
+# Project Description
 
-### 3.1 Chain Layer (required)
+## Problem / Motivation
 
-- **Arbitrum Stylus (Rust/WASM via `stylus-sdk`)**
-    - Role: permanent public record of inheritance events
-    - Minimal API:
-        - `register_secret(cid_hash, meta) -> secret_id`
-        - `inherit(secret_id, to)`
-        - Events:
-            - `SecretRegistered(secretId, owner, cidHash, time)`
-            - `Inherited(secretId, from, to, time)`
-    - Rationale: satisfies Stylus requirement; small surface area → fast to build, easy to demo.
+Currently, those who want to pass down their knowledge or skills have no choice but to share secret information directly — either orally or on paper.  
+There is no verifiable way to record *who passed it to whom*, which makes extinction of such knowledge a real risk.
 
-### 3.2 Frontend Layer (required)
+Traditional craftsmanship is disappearing globally not only because knowledge is lost, but because the act of transmission is invisible to institutions and future generations.  
+Anchoring these successions on-chain — with auditable records and public funding mechanisms — makes cultural inheritance *visible* and *preservable*.
 
-- **Next.js 14 (App Router) + TypeScript**
-- **wagmi v2 + viem + RainbowKit** (wallet UX on Arbitrum testnet)
-- **Crypto**: Web Crypto API + **libsodium.js**
-    - Content encryption: **AES-GCM (256)** → produces `ciphertext`
-    - Key wrapping per receiver: **X25519 (ECDH)** → derive KEK → wrap CEK with AES-GCM
-- **IPFS HTTP client** (e.g., web3.storage, Pinata)
-- **QR/file hand-off** for the signed payload bundle
+Additional risks:
 
-### 3.3 Storage (required)
+- Even though such cultural assets are meaningful and important to preserve, it is often unclear who contributed to their preservation.
+- Historically sensitive knowledge is vulnerable to censorship by institutions or governments. Oral traditions can be altered, sanitized, or erased.
 
-- **IPFS** for encrypted content (ciphertext)
-- On-chain stores `cidHash` only (integrity reference)
+## Solution
 
-### 3.4 Evidence & Tags (recommended)
+- Record *who (wallet)* passed knowledge to *whom (wallet)* on-chain, preserving lineage and provenance.  
+- Encrypt content **client-side** so the knowledge itself remains private.  
+- Store encrypted data on IPFS; only its hash (CID) is referenced on-chain.  
+- Only the designated successor's wallet can derive the correct key to decrypt the content.  
+- This enables preservation of private cultural assets without forcing public disclosure.
 
-- **Ethereum Attestation Service (EAS)** to publish an **Inheritance attestation** (type tags, references), enabling external protocols/organizations to query by **UID**.
-- so that other funding protocol could refer the inheritance data, and fund them  depending upon dependency of each inheritance.
+## Target Users
+
+- Individuals wanting to pass down secret or valuable knowledge *privately*.
+- Examples:
+  - A restaurant owner with a secret recipe but no successor.
+  - Craftsmen with unique techniques that cannot be publicized.
+  - Oral storytelling traditions and local cultural narratives.
 
 ---
 
-## 4) Data Model (minimal)
+# Key Features
 
-### 4.1 On-chain (Stylus events)
+- **Client-side encrypted inheritance**
+  - The owner selects a PDF and a successor wallet address.
+  - File is encrypted entirely in the browser using **AES-256-GCM**.
+  - The AES key is derived from the successor’s Ethereum address via **PBKDF2 (100,000 iterations)**.
 
-- `SecretRegistered(secretId, owner, cidHash, time)`
-- `Inherited(secretId, from, to, time)`
+- **Successor-only decryption**
+  - Only the wallet that matches the successor address can regenerate the AES key.
 
-### 4.2 Off-chain content and bundle
+- **IPFS-based decentralized storage**
+  - Only encrypted blobs are uploaded.
+  - Blob format: `[IV (12 bytes)][Encrypted Data]`.
 
-- **Ciphertext**: result of `AES-GCM(CEK, plaintext)` with a unique IV
-- **Handoff bundle** (QR / download file) — signed by the originator:
+- **On-chain lineage**
+  - Immutable record of: owner → successor, `ipfsHash`, `fileName`, `fileSize`, `timestamp`, and status flags.
+  - Creates verifiable historical context for each inheritance.
 
-```jsx
-{
-  "version": "1",
-  "secretId": 123,
-  "cid": "bafy... (IPFS CID)",
-  "cidHash": "0x...",
-  "wrapOriginator": "base64",   // CEK wrapped for the giver
-  "wrapSuccessor": "base64",    // CEK wrapped for the successor
-  "originatorWallet": "0xA...",
-  "successorWallet": "0xB...",
-  "originatorEncPub": "base64", // X25519 pubkey bound to wallet signature
-  "successorEncPub": "base64",
-  "originatorSignature": "0x...", // wallet signature over the canonicalized bundle
-  "createdAt": 1712345678
-}
-```
-
-### 4.3 EAS schema (tags + interoperability)
-
-- **Schema name**: `Inheritance_v1`
-- **Fields**:
-    - `secretId: uint256`
-    - `inheritanceType: bytes32` // e.g., keccak256("recipe"), "technique", "manuscript", "market-knowhow"
-    - `from: address`
-    - `to: address` or `toCommitment: bytes32` // use commitment for privacy: keccak256(to, salt)
-    - `cidHash: bytes32`
-    - `prevUID: bytes32` // links the previous inheritance attestation to form a lineage
-    - `noteHash: bytes32` (optional)
-- **Revocable / expiration** as needed
-- **Privacy modes**:
-    - Public → include `to` directly
-    - Semi-private → include `toCommitment`, successor reveals later with salt
+- **End-to-end flow**
+  - Originator: encrypt → upload → register on-chain  
+  - Successor: verify → fetch → decrypt → download
 
 ---
 
-## 5) User Flow (MVP, demo-centric)
+# Architecture Overview
 
-### 5.1 Register a Secret (Originator)
+## System Components
 
-1. **Encrypt**: generate `CEK (AES-GCM 256)`, then `ciphertext = Encrypt(CEK, plaintext)`
-2. **Store**: upload `ciphertext` to IPFS → get `cid`; compute `cidHash = keccak256(cid)`
-3. **Commit**: call Stylus `register_secret(cid_hash)` → event `SecretRegistered(...)` (show Tx hash in UI)
+- **Frontend (Next.js + Wagmi + viem)**  
+  Handles:
+  - file encryption/decryption (Web Crypto API)
+  - IPFS upload/download (via API route or direct)
+  - contract calls
+  - lineage display
 
-### 5.2 Inherit (Originator → Successor)
+- **Blockchain (Arbitrum Sepolia / Solidity)**  
+  Responsible for:
+  - storing inheritance metadata
+  - verifying successor identity (`msg.sender`)
+  - preserving lineage
 
-1. **Wrap CEK for both parties**:
-    - `wrapOriginator` using originator’s X25519 pubkey
-    - `wrapSuccessor` using successor’s X25519 pubkey
-2. **Bundle**: create the signed payload (above) and present as **QR / file download**
-3. **Record lineage**: call Stylus `inherit(secret_id, to)` → `Inherited(...)` event
-4. **(Recommended) EAS attestation**: issue `Inheritance_v1` with type tag and `prevUID` link
-
-### 5.3 Receive & Decrypt (Successor)
-
-1. **Import**: load the bundle (scan QR or upload JSON)
-2. **Unwrap CEK**: X25519 ECDH → KEK → decrypt `wrapSuccessor`
-3. **Fetch + Decrypt**: fetch `ciphertext` via `cid` from IPFS → decrypt with CEK
-4. **UI**: show “Decrypted ✅” and render lineage `A → B` (events and/or EAS UID)
-
-> Next inheritance (B → C): re-encrypt content with a new CEK, produce exactly two wraps (B, C), new cid and cidHash, new inherit event, and a new EAS UID.
-> 
-> 
-> At any step, **only the current two parties** (giver + successor) can decrypt.
-> 
+- **Storage: IPFS**
+  - Stores encrypted blobs only.
+  - Contract stores the `ipfsHash` as reference.
 
 ---
 
-## 6) Security Requirements (MVP-level, must keep)
+## Inheritance Flow Diagram  
+(*ASCII diagram — GitHub compatible*)
 
-- **Two-party readability rule** per step: keep **only two wraps** (giver, successor) for the active CEK
-- **Key binding**: each user’s X25519 `encPub` is **signed by the wallet** to prevent key-swap attacks
-- **AES-GCM IV**: unique per encryption; IV can be public
-- **Bundle signature**: the originator signs the bundle; verify client-side
-- **No plaintext or CEK server-side**; decryption is **client-only**
-- **On-chain never stores content** (only `cidHash`)
-- **EAS contains no keys or content** (claims/tags only)
+*(To be added)*
 
 ---
 
-## 7) Development Plan (2 days)
+# Encryption & Decryption Flow (MVP)
 
-**Day 1 – AM (On-chain)**
+## 1. Owner (Originator)
 
-- Implement Stylus `Registry` with `register_secret / inherit` + events
-- Deploy to Arbitrum testnet (Stylus environment)
+1. Select PDF + successor wallet address.  
+2. Derive AES key with PBKDF2(successorAddress, 100k iterations).  
+3. Encrypt file using AES-256-GCM (with random 12-byte IV).  
+4. Create blob: `[IV][ciphertext]`.  
+5. Upload encrypted blob to IPFS via API route or client-side upload.  
+6. Call `createInheritance(successor, ipfsHash, tag, fileName, fileSize)`.
 
-**Day 1 – PM (Front/Crypto/Storage)**
+## 2. Successor (Receiver)
 
-- Wallet connect (RainbowKit / wagmi)
-- IPFS upload; AES-GCM encryption; `register_secret` end-to-end
-
-**Day 2 – AM (Handoff/Decrypt)**
-
-- X25519 keypairs + wallet-signature binding
-- CEK wrap/unwarp; bundle JSON; QR + file download
-- `inherit` call and event display
-
-**Day 2 – PM (Evidence/UX)**
-
-- (Recommended) EAS attestation issue + `prevUID` linking
-- Lineage view (`A → B`) with timestamps
-- Full demo script walkthrough (60–90s)
+1. Connect wallet.  
+2. Contract verifies:
+   - caller == successor  
+   - inheritance is active & unclaimed  
+3. Fetch encrypted blob from IPFS.  
+4. Derive AES key from successor’s address (PBKDF2).  
+5. Decrypt and download PDF.  
+6. Optionally call `claimInheritance(id)` to mark as received.
 
 ---
 
-## 8) Risks & Fallbacks
+# Security Properties (MVP)
 
-- **IPFS latency** → pre-pin a tiny ciphertext; show “Decrypted ✅” badge for the demo
-- **Handoff channel issues** → provide both QR and file download paths
-- **Stylus hiccups** → keep contract minimal; pre-record a successful `register` + `inherit` in case of network issues
-- **EAS downtime** → skip; the core demo works with Stylus + IPFS + bundle only
+- Files are encrypted **before upload** (E2E).  
+- Only successor wallet can derive the correct key.  
+- No keys stored on-chain, off-chain, or in IPFS.  
+- IPFS blobs are public but unreadable.  
+- On-chain lineage is tamper-proof.
 
----
+Security limitations:
 
-## 9) Interop via EAS Tags (for other protocols/orgs)
-
-- Use `inheritanceType` to tag the kind of information:
-    
-    Examples: `recipe`, `technique`, `manuscript`, `design-notes`, `market-knowhow`, `healing-method`, `ritual`, `performance-notes`
-    
-- External protocols or cultural organizations can **query EAS by UID / type** to analyze or support specific inheritance categories (e.g., funding, curation, registries).
-- Keep `prevUID` chaining for **navigable lineage**.
+- If successor wallet is compromised, the encrypted file can be decrypted.  
+- No key rotation mechanism yet.  
+- Browser-based crypto requires trustworthy hosting.
 
 ---
 
-## 10) Why this wins (consistency + speed)
+# Tech Stack
 
-- **Stylus** focuses on **verifiable facts**; minimal Rust surface → fast build, clear demos
-- **Client-side crypto + IPFS** avoids server trust and keeps scope tight
-- **No mandatory messaging stack**; payload hand-off via QR/file is robust and demo-friendly
-- **EAS tags** create an **interoperable public footprint** without leaking secrets
-
-## Minimal Stylus Interface (for reference)
-
-- `register_secret(bytes32 cid_hash, bytes meta) -> uint256 secret_id`
-- `inherit(uint256 secret_id, address to)`
-- `event SecretRegistered(uint256 indexed secretId, address indexed owner, bytes32 cidHash, uint256 time)`
-- `event Inherited(uint256 indexed secretId, address indexed from, address indexed to, uint256 time)`
+- **Blockchain:** Arbitrum Sepolia  
+- **Smart Contracts:** Solidity  
+- **Frontend:** Next.js 14, TypeScript, Wagmi, viem, shadcn/ui  
+- **Storage:** IPFS  
+- **Crypto:** Web Crypto API (AES-256-GCM, PBKDF2)  
+- **Tooling:** pnpm, dotenv, eslint/prettier  
 
 ---
 
----
-
-# User Flow (MVP, Notion-ready)
-
-## 0) Roles
-
-- **Originator (giver)**: owns the secret.
-- **Successor (receiver)**: designated inheritor.
-- **Observer**: can verify lineage only (never sees content).
+# Contract Addresses
+- Contract: Inheritance
+- Address: (fill after deployment)
+- Network: Arbitrum Sepolia
 
 ---
 
-## 1) Preconditions (first-time only)
+# Demo
 
-- Both parties have wallets on **Arbitrum testnet**.
-- In the app: **Connect Wallet**.
-- App generates a local **X25519 keypair** (client-side) and **binds encPub to the wallet** (wallet signs a message proving ownership).
-    
-    Result: `{ encPub, walletSignature }` stored client-side (and optionally published).
-    
+**Main Repository Link**  
+https://github.com/Heirloom-Inheritance-Protocol
 
----
+**Demo / Deployment Link**  
+https://heirloom-inheritance-protocol.vercel.app/dashboard
 
-## 2) Register Secret (Originator)
-
-Goal: encrypt the content, store it off-chain, register its reference on-chain.
-
-1. **Encrypt** (client):
-    - Generate `CEK` (AES-GCM 256).
-    - `ciphertext = AES-GCM(CEK, plaintext)` (unique IV).
-2. **Store** (IPFS):
-    - Upload `ciphertext` → get `cid`.
-    - Compute `cidHash = keccak256(cid)`.
-3. **Commit** (Stylus):
-    - `register_secret(cidHash)` → emits `SecretRegistered(secretId, owner, cidHash, time)`.
-    - UI shows Tx hash and `secretId`.
-
-**Outputs**: `secretId`, `cid`, `cidHash`, registration Tx hash.
+**Slides / Presentation**  
+https://www.figma.com/make/rSGqrMpI7cr1QmmQGiirqD/Create-Presentation-Material
 
 ---
 
-## 3) Inherit (Originator → Successor)
+# Objectives
 
-Goal: ensure only the **current two people** can decrypt; record the lineage.
+By the end of ARG25, the following core objectives were achieved:
 
-1. **Wrap CEK for two parties** (client):
-    - `wrapOriginator` for Originator’s `encPub`.
-    - `wrapSuccessor` for Successor’s `encPub`.
-        
-        *(Exactly two wraps; no third copy.)*
-        
-2. **Create signed bundle** (handoff payload):
-
-```
-{
-  "version": "1",
-  "secretId": 123,
-  "cid": "bafy... ",
-  "cidHash": "0x...",
-  "wrapOriginator": "base64",
-  "wrapSuccessor": "base64",
-  "originatorWallet": "0xA...",
-  "successorWallet": "0xB...",
-  "originatorEncPub": "base64",
-  "successorEncPub": "base64",
-  "originatorSignature": "0x...",
-  "createdAt": 1712345678
-}
-
-```
-
-- Sign the canonicalized JSON with the **originator’s wallet**.
-1. **Deliver bundle**:
-    - Show **QR** or let user **Download JSON** (any channel is fine).
-2. **Record lineage** (Stylus):
-    - `inherit(secretId, to=successor)` → emits `Inherited(secretId, from, to, time)`.
-3. **(Recommended) EAS attestation**:
-    - Issue `Inheritance_v1` with fields: `secretId`, `inheritanceType (bytes32 tag)`, `from`, `to` *or* `toCommitment`, `cidHash`, `prevUID`.
-    - Use `prevUID` to link the chain (lineage).
-
-**Outputs**: signed bundle (QR/file), inheritance Tx hash, optional EAS UID.
+- Record at least one *inheritance event* (owner → successor) on-chain and show the transaction hash.
+- Successfully upload an encrypted file to IPFS and store only the CID on-chain.
+- Ensure that only the designated successor wallet can decrypt the encrypted file.
+- Provide a clear UI workflow:  
+  “inheritance created → inheritance claimable by successor → inheritance claimed → decrypted.”
 
 ---
 
-## 4) Receive & Decrypt (Successor)
+# Weekly Progress
 
-Goal: verify provenance and decrypt locally.
+## Week 1 (ends Oct 31)
+**Goals:**  
+Team formation and early ideation.
 
-1. **Import bundle**: scan QR or upload JSON.
-2. **Auto-verify**:
-    - Verify originator’s **wallet signature** over the bundle.
-    - Check Stylus `Inherited(... to=me)` exists.
-    - Confirm `keccak256(cid) == cidHash`.
-3. **Decrypt** (client):
-    - Unwrap `wrapSuccessor` with local X25519 privkey → get `CEK`.
-    - Fetch `ciphertext` from IPFS by `cid`.
-    - `plaintext = AES-GCM(CEK, ciphertext)`.
-4. **UI**: show **“Decrypted ✅”**, plus lineage `A → B` (timestamps / Tx links).
-    - Optional: link EAS UID with `inheritanceType` tag.
-
-**Outputs**: readable content (local only), verified lineage view.
+**Progress Summary:**  
+Teamed up with @DaroMacs and @masaun.  
+Explored initial product directions and cultural preservation use cases.
 
 ---
 
-## 5) Next Inheritance (B → C)
+## Week 2 (ends Nov 7)
+**Goals:**  
+Finalize the core architecture, define encryption and storage flows, and choose the tech stack.
 
-Goal: keep the “**only the current two** can read” rule.
+**Progress Summary:**
 
-1. B decrypts current content with old `CEK`.
-2. Re-encrypt with **new CEK** → upload → new `cid`/`cidHash`.
-3. Produce **two wraps** only (for **B** and **C**).
-4. Deliver new bundle; call `inherit(secretId, to=C)`.
-5. (Optional) EAS with `prevUID` link.
+### Frontend MVP
+- Scaffolded a Next.js + Wagmi + viem application.
+- Integrated wallet connection and basic transaction handling.
+- Built initial UI for uploading PDFs and showing inheritance lineage.
+- Implemented placeholder IPFS integration to simulate CID workflows.
 
-Result: only **B & C** can read the current version; prior versions remain separate by CID.
+### Documentation
+- Added system architecture diagrams to `/docs/ARCHITECTURE.md`.
+- Updated README with contract address placeholders, stack overview, and usage instructions.
 
----
+### Tech Stack Overview
+- **Blockchain:** Arbitrum Sepolia  
+- **Smart Contracts:** Solidity  
+- **Frontend:** Next.js 14, TypeScript, Wagmi, viem, shadcn/ui  
+- **Storage:** IPFS (CID-based retrieval)  
+- **Tooling:** pnpm, dotenv, eslint/prettier  
 
-## 6) Screens (minimum)
-
-- **Register (Originator)**
-    
-    `Connect Wallet` → `Encrypt & Upload` → `Register on-chain` → show Tx + `secretId`
-    
-- **Inherit (Originator)**
-    
-    Pick `secretId` → `Wrap & Sign Bundle` → `Show QR / Download JSON` → `Record lineage` (Tx) → *(optional)* `Issue EAS`
-    
-- **Receive (Successor)**
-    
-    `Connect Wallet` → *(first time)* `Set up decryption key` & `Bind to wallet` → `Scan QR / Import JSON` → `Verify` → `Decrypt` → `Decrypted ✅` → `View lineage`
-    
-
----
-
-## 7) Security Rules (must-keep)
-
-- **Two-party readability**: exactly **two wraps** (giver + successor) per active CEK.
-- **Key binding**: bind each `encPub` to wallet via signature (prevents key-swap/MITM).
-- **AES-GCM IV**: unique per encryption; IV can be public.
-- **Bundle signature**: originator signs; verify in client.
-- **No plaintext/CEK server-side**; chain stores **`cidHash` only**.
-- **EAS** contains **no keys/content** (claims/tags only).
+### System Architecture (MVP)
+Validated the integration model:
+- Client-side AES encryption  
+- IPFS upload via API route or client  
+- On-chain metadata  
+- Successor-only decryption  
 
 ---
 
-## 8) Success Criteria (demo)
+## Week 3 (ends Nov 14)
+**Goals:**  
+Complete the MVP development and deploy all components.
 
-- `SecretRegistered` and `Inherited` **Tx hashes visible** in UI.
-- Successor completes **bundle import → verify → decrypt** and sees **Decrypted ✅**.
-- Lineage `A → B` with timestamps is rendered.
-- *(Optional)* EAS UID shows **`inheritanceType` tag** for external reference.
-
----
-
-## 9) Fallbacks
-
-- **QR too large** → use **bundle.json download** and import.
-- **IPFS slow** → use a **small pre-pinned sample**; show successful decrypt badge.
-- **Network hiccups** → keep **screenshot/recording** of successful Tx.
-- **EAS down** → skip; core demo works with Stylus + IPFS + bundle.
+**Progress Summary:**
+- Smart contract deployed to Arbitrum Sepolia.  
+- IPFS integration with actual encrypted blobs is live.  
+- Full end-to-end inheritance flow implemented:
+  encrypt → upload → register → claim → decrypt.  
+- Users can now experience the full MVP on the live deployment.
 
 ---
 
-## 10) Glossary
+# Final Wrap-Up
 
-- **CEK** (Content Encryption Key): symmetric key (AES-GCM) for the content.
-- **ciphertext**: encrypted content.
-- **cid / cidHash**: IPFS content ID / its `keccak256` (stored on-chain).
-- **wrap**: CEK encrypted for a specific recipient’s public key; only that recipient can unwrap.
+### Deliverables
+- Fully functional MVP  
+- On-chain contract  
+- Live frontend with complete user flows  
+- Encrypted inheritance mechanism  
+- Lineage visibility and basic UI
+
+### Technical Outcomes
+- Verified viability of client-side AES-256-GCM encryption + PBKDF2 key derivation tied to successor wallet address.
+- Implemented a minimal yet secure pipeline combining IPFS, Ethereum smart contracts, and browser crypto.
+- Identified areas for improvement (key rotation, ECDH upgrade, multi-layered permissions).
+
+### Repository / MVP / DEMO
+- **Repository:** https://github.com/Heirloom-Inheritance-Protocol  
+- **MVP page:** https://heirloom-inheritance-protocol.vercel.app/dashboard  
+- **Slides:** https://www.figma.com/make/rSGqrMpI7cr1QmmQGiirqD/Create-Presentation-Material
 
 ---
 
-This flow is intentionally minimal, consistent, and hackathon-friendly: **Stylus for facts**, **IPFS for encrypted blobs**, **client-side crypto for access**, and **EAS tags** for interoperable lineage metadata.
+# Learnings
 
-Thinking
+During ARG25, we gained:
 
-ChatGPT can make mistakes. Check important info.
+- A deeper understanding of the constraints and possibilities of client-side encryption in browser-based dApps.
+- Practical insights into connecting decentralized storage (IPFS) with composable smart contract metadata.
+- A framework for turning abstract cultural-preservation concepts into a minimal but working cryptographic protocol.
+- Recognition of the limitations of address-based key derivation and the need for future ECDH-based upgrades.
+
+---
+
+# Next Steps
+
+## Short Term
+- Deploy to mainnet and expand across multiple L2s.
+- Upgrade encryption model (e.g., migrate from PBKDF2 → ECDH-based key agreement).
+- Integrate with EAS so other protocols can reuse inheritance lineage permissionlessly.
+
+## Medium Term
+- **AI Integration**
+  - Automatically estimate cultural/economic importance scores for each inheritance.
+  - Auto-tag inherited data for better discoverability.
+  - Match inheritors and successors algorithmically.
+
+- **Funding Mechanisms**
+  - Integrate Gitcoin stack for donation and grant-based preservation funding.
+  - Run funding rounds for cultural assets.
+  - Collaborate with local governments and cultural institutions to test real-world deployments.
+
+---
+
