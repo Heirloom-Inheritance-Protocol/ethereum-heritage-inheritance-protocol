@@ -5,10 +5,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 
-import { InheritanceForm } from "@/components/dashboard/inheritance-form";
-import { ReceivedInheritances } from "@/components/dashboard/received-inheritances";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { DashboardTabs } from "@/components/ui/dashboard-tabs";
+import { InheritanceForm } from "@/components/dashboard/inheritance-form";
+import { ReceivedInheritances } from "@/components/dashboard/received-inheritances";
+import { InheritanceTree } from "@/components/ui/inheritanceTree";
 
 export default function DashboardPage(): JSX.Element {
   const router = useRouter();
@@ -51,6 +52,11 @@ export default function DashboardPage(): JSX.Element {
                 value: "inheritance",
                 label: "Inheritance",
                 content: <InheritanceForm />,
+              },
+              {
+                value: "inheritance-tree",
+                label: "Inheritance Tree",
+                content: <InheritanceTree />,
               },
               {
                 value: "inheritance-vaults",
