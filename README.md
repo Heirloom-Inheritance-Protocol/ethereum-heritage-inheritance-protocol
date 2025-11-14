@@ -231,7 +231,6 @@ Additional risks:
 
 <img width="814" height="780" alt="image" src="https://github.com/user-attachments/assets/37d357ec-621d-46ea-9807-c7f92191c971" />
 
-
 **1-0. Connect Wallet**  
 Connect your wallet to the app.  
 Non-crypto users can also generate a wallet easily using just an email address.
@@ -246,7 +245,7 @@ At the **Successor Wallet** field in the Inherit section tab, enter the wallet a
 Click **Upload PDF** and select the file you want to inherit.
 
 **1-4. Choose a Tag Type**  
-Select a relevant tag such as *Recipe*, *Cultural Heritage*, *Finance*, etc.  
+Select a relevant tag such as _Recipe_, _Cultural Heritage_, _Finance_, etc.  
 (These tags allow efficient querying and classification in the database.)
 
 **1-5. Create Inheritance**  
@@ -259,8 +258,8 @@ Uploaded inheritance entries can always be accessed and searched under the **Vau
 ---
 
 ## 2. Receiving an Inheritance (Successor)
-<img width="1063" height="894" alt="image" src="https://github.com/user-attachments/assets/8daa2466-e67e-41a6-a616-7ccb6ad166ad" />
 
+<img width="1063" height="894" alt="image" src="https://github.com/user-attachments/assets/8daa2466-e67e-41a6-a616-7ccb6ad166ad" />
 
 **2-0. Connect Wallet**  
 The chosen successor connects using the **same wallet address** registered by the originator.
@@ -278,28 +277,27 @@ The encrypted file is fetched and automatically decrypted locally, then saved sa
 
 <img width="869" height="819" alt="image" src="https://github.com/user-attachments/assets/36022cca-c05a-4920-8a24-52a8b5cc2220" />
 
-
-
 **3-1. Visual Lineage Graph**  
 All contributors in an inheritance chain — originators, successors, and cultural organizations curating heritage — can visually review each succession event.  
-The dashboard presents a **graph of parent–child inheritance relationships**, showing how knowledge has been passed across generations.  
+The dashboard presents a **graph of parent–child inheritance relationships**, showing how knowledge has been passed across generations.
 
 Additional insights include:
-- Automatic counting of total contributors in each inheritance chain  
-- Easy identification of branching cultural lineages  
+
+- Automatic counting of total contributors in each inheritance chain
+- Easy identification of branching cultural lineages
 - High-level visibility into how cultural assets evolve
 
 Example external stakeholders who may access the graph view:  
-*Local governments, museums, cultural preservation NGOs, public goods organizations*
+_Local governments, museums, cultural preservation NGOs, public goods organizations_
 
 **3-2. Evidence for Public Goods Funding and Access Control**  
 External organizations can use the verifiable on-chain proof of inheritance to:
-- Evaluate cultural preservation contributions  
-- Use inheritance lineage as **evidence** in public-goods or grant-funding processes  
+
+- Evaluate cultural preservation contributions
+- Use inheritance lineage as **evidence** in public-goods or grant-funding processes
 - Apply **gating criteria** (e.g., only contributors of a specific inheritance chain can access a program, benefit, or grant)
 
 This ensures that historical knowledge is preserved with integrity and that contributors receive recognition and opportunities aligned with their cultural work.
-
 
 # Encryption & Decryption Flow (MVP)
 
@@ -498,10 +496,14 @@ Complete the MVP development and deploy all components.
 
 ---
 
-# Learnings(to be updated)
+# Learnings
 
-During ARG25, we gained:
+During ARG25, we deepened our understanding of:
 
-- aaaaaa
+- Core Arbitrum Stylus concepts from the lecture series, including how Rust-based contracts interact with the Arbitrum toolchain.
+- Security best practices around client-side encryption, emphasizing key derivation, storage minimization, and safe handling of encrypted payloads.
+- Designing IPFS upload flows that keep the encrypted data decoupled from on-chain references while preserving traceability.
+- Structuring inheritance journeys in the UI so wallet interactions, encryption steps, and status updates remain transparent to non-technical users.
+- Coordinating smart contract events with frontend state to build reliable lineage timelines across deployments and testnets.
 
 ---
