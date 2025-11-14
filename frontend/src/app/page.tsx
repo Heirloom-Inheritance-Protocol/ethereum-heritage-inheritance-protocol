@@ -68,7 +68,7 @@ function Footer() {
     <footer className="bg-neutral-900 text-neutral-200">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-12 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-lg font-semibold">Heirloom Inheritance Protocol</p>
+          <p className="text-lg font-semibold">Heritage Inheritance Protocol</p>
           <p className="mt-2 text-sm text-neutral-400">
             Preserving legacies with encrypted, on-chain stewardship.
           </p>
@@ -119,9 +119,10 @@ export default function Home() {
             How It Works
           </h2>
           <p className="mx-auto max-w-2xl text-center text-lg text-neutral-600 dark:text-neutral-400">
-            The Heirloom Inheritance Protocol guides each family through secure
-            stewardship, transforming private knowledge into an enduring digital
-            legacy.
+            Record who passed knowledge to whom on-chain, preserving verifiable
+            lineage. Encrypt content client-side and store on IPFS, enabling
+            preservation of private cultural assets without forcing public
+            disclosure.
           </p>
           <div className="mt-16">
             <Suspense
@@ -138,10 +139,11 @@ export default function Home() {
                 Built for continuity and clarity
               </h3>
               <p className="text-neutral-600 dark:text-neutral-400">
-                Each vault is calibrated for transparency with the right people
-                at the right time. We orchestrate cryptographic handshakes,
-                regulatory readiness, and real-world triggers so your intent is
-                never lost.
+                Traditional craftsmanship disappears because knowledge
+                transmission is invisible to institutions. Anchoring successions
+                on-chain with auditable records makes cultural inheritance
+                visible and preservable, protecting historically sensitive
+                knowledge from censorship or alteration.
               </p>
               <div className="space-y-3">
                 <div className="flex items-start gap-3 text-neutral-700 dark:text-neutral-300">

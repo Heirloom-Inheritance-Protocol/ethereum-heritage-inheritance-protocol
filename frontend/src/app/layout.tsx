@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Heirloom Inheritance Protocol",
-  description: "Heirloom-Inheritance-Protocol",
+  title: "Heritage Inheritance Protocol",
+  description: "Heritage-Inheritance-Protocol",
 };
 
 export default function RootLayout({
