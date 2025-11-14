@@ -23,12 +23,14 @@ export function BackgroundLinesHero() {
         Inheritance knowledge, <br /> Heirloom Protocol.
         </h2> */}
       <TextGenerateEffect
-        words="Inheritance knowledge Heirloom Protocol."
+        words="Heritage Inheritance Protocol."
         className="text-center text-[40px] md:text-5xl lg:text-6xl mb-8 w-1/2"
       />
       <p className="max-w-xl mx-auto text-sm md:text-lg text-neutral-700 dark:text-neutral-400 text-center pb-6">
-        Heirloom Inheritance Protocol is a protocol for inheriting assets from
-        your ancestors, and the knowledge of your ancestors.
+        Record who passed knowledge to whom on-chain, preserving lineage and
+        provenance. Encrypt content client-side and store on IPFS, enabling
+        preservation of private cultural assets without forcing public
+        disclosure.
       </p>
 
       {ready && authenticated ? (

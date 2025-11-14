@@ -7,12 +7,10 @@ import { WobbleCard } from "./wobble-card";
 export function WobbleCardDemo() {
   return (
     <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-4 lg:grid-cols-3">
-      <WobbleCard
-        containerClassName="relative col-span-1 min-h-[500px] bg-pink-800 lg:col-span-2 lg:min-h-[300px]"
-      >
+      <WobbleCard containerClassName="relative col-span-1 min-h-[500px] bg-pink-800 lg:col-span-2 lg:min-h-[300px]">
         <div className="max-w-xs">
           <h2 className="text-balance text-left text-base font-semibold tracking-[-0.015em] text-white md:text-xl lg:text-3xl">
-            Heirloom Protocol stewards every generational legacy
+            Heritage Inheritance Protocol stewards every generational legacy
           </h2>
           <p className="mt-4 text-left text-base/6 text-neutral-200">
             Encode family knowledge, digital assets, and living governance into
@@ -23,7 +21,7 @@ export function WobbleCardDemo() {
           src="/linear.webp"
           width={500}
           height={500}
-          alt="Heirloom protocol dashboard preview"
+          alt="Heritage Inheritance Protocol dashboard preview"
           className="absolute -bottom-10 -right-4 object-contain grayscale filter rounded-2xl lg:-right-[40%]"
         />
       </WobbleCard>
@@ -38,9 +36,7 @@ export function WobbleCardDemo() {
         </p>
       </WobbleCard>
 
-      <WobbleCard
-        containerClassName="relative col-span-1 min-h-[500px] bg-blue-900 lg:col-span-3 lg:min-h-[600px] xl:min-h-[300px]"
-      >
+      <WobbleCard containerClassName="relative col-span-1 min-h-[500px] bg-blue-900 lg:col-span-3 lg:min-h-[600px] xl:min-h-[300px]">
         <div className="max-w-sm">
           <h2 className="max-w-sm text-balance text-left text-base font-semibold tracking-[-0.015em] text-white md:max-w-lg md:text-xl lg:text-3xl">
             Launch your encrypted inheritance workflow today

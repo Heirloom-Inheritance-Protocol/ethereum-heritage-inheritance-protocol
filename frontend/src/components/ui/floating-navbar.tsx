@@ -62,7 +62,7 @@ export const FloatingNav = ({
         <div className="flex items-center gap-3">
           <img src="/heritage-tr.png" alt="" className="h-12 w-12 shrink-0" />
           <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
-            Heirloom Protocol
+            Heritage Inheritance Protocol
           </span>
         </div>
         <nav className="flex items-center gap-4">

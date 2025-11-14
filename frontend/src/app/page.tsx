@@ -6,6 +6,7 @@ import { BackgroundLinesHero } from "@/components/BackgroundHero";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ScrollIndicator } from "@/components/ui/scroll-indicator";
 import { WobbleCardDemo } from "@/components/ui/wobble-card-demo";
+import { Card } from "@/components/ui/card";
 
 interface FooterLink {
   href: string;
@@ -174,6 +175,140 @@ export default function Home() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="bg-white dark:bg-neutral-900 py-20 px-4">
+        <div className="max-w-6xl mx-auto space-y-8">
+          <h2 className="text-3xl md:text-5xl font-bold text-center text-neutral-900 dark:text-white">
+            Heritage in Practice
+          </h2>
+          <p className="text-center text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+            Documented knowledge inheritance across cultures
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <Card className="overflow-hidden bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800">
+              <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1758874960025-85d40fde6252?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYW1pbHklMjByZWNpcGUlMjBncmFuZG1vdGhlciUyMGNvb2tpbmd8ZW58MXx8fHwxNzYzMDY2NTA0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                  alt="Family recipe tradition"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 space-y-3">
+                <div className="text-4xl mb-2">🍲</div>
+                <h3 className="text-xl md:text-2xl font-semibold text-neutral-900 dark:text-white">
+                  Heritage Recipe Documents
+                </h3>
+                <p className="text-neutral-600 dark:text-neutral-400">
+                  Secret family recipes documented with precise measurements and
+                  techniques, passed down through encrypted files while
+                  preserving culinary heritage.
+                </p>
+                <div className="pt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span>Written ingredient formulas</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span>Step-by-step preparation docs</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span>Verifiable family lineage</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800">
+              <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1575804428466-7a663f99bb81?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZ2Vub3VzJTIwb3JhbCUyMHRyYWRpdGlvbiUyMHN0b3J5dGVsbGluZ3xlbnwxfHx8fDE3NjMwNjY1MDV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                  alt="Indigenous oral traditions"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 space-y-3">
+                <div className="text-4xl mb-2">📜</div>
+                <h3 className="text-xl md:text-2xl font-semibold text-neutral-900 dark:text-white">
+                  LATAM Traditional Knowledge
+                </h3>
+                <p className="text-neutral-600 dark:text-neutral-400">
+                  Indigenous communities document ancestral stories, medicinal
+                  formulas, and ceremonial practices in written form for secure
+                  transmission to next generations.
+                </p>
+                <div className="pt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                    <span>Transcribed sacred texts</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                    <span>Written medicinal recipes</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                    <span>Elder-to-youth documentation</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800">
+              <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1759340946094-62603dedcac1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGhlcml0YWdlJTIwYXJ0aWZhY3RzJTIwbXVzZXVtfGVufDF8fHx8MTc2MzA2NjUwNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                  alt="Cultural artifacts and heritage"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 space-y-3">
+                <div className="text-4xl mb-2">📚</div>
+                <h3 className="text-xl md:text-2xl font-semibold text-neutral-900 dark:text-white">
+                  Cultural Asset Documentation
+                </h3>
+                <p className="text-neutral-600 dark:text-neutral-400">
+                  Museums preserve restoration manuals, provenance records, and
+                  traditional technique documentation through verifiable
+                  custodian succession chains.
+                </p>
+                <div className="pt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span>Restoration procedure manuals</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span>Technique instruction documents</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span>Recorded curator knowledge</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <Card className="p-6 bg-gradient-to-r from-neutral-100 to-neutral-50 dark:from-neutral-800/50 dark:to-neutral-900/50 border-neutral-200 dark:border-neutral-800 mt-8">
+            <p className="text-center text-base md:text-lg text-neutral-700 dark:text-neutral-300">
+              All knowledge is{" "}
+              <strong className="text-neutral-900 dark:text-white">
+                documented in encrypted files
+              </strong>{" "}
+              with{" "}
+              <strong className="text-neutral-900 dark:text-white">
+                verifiable lineage
+              </strong>
+              , enabling sustainable cultural preservation through written
+              records
+            </p>
+          </Card>
         </div>
       </section>
 
