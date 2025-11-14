@@ -7,6 +7,7 @@ import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ScrollIndicator } from "@/components/ui/scroll-indicator";
 import { WobbleCardDemo } from "@/components/ui/wobble-card-demo";
 import { Card } from "@/components/ui/card";
+import { MAIN_NAV_ITEMS } from "@/lib/navigation";
 
 interface FooterLink {
   href: string;
@@ -98,13 +99,7 @@ function Footer() {
 export default function Home() {
   return (
     <>
-      <FloatingNav
-        navItems={[
-          { name: "Home", link: "/" },
-          { name: "About", link: "#about" },
-          { name: "Contact", link: "#contact" },
-        ]}
-      />
+      <FloatingNav navItems={MAIN_NAV_ITEMS} />
       <div className="relative min-h-screen">
         <BackgroundLinesHero />
         <ScrollIndicator targetId="content" />

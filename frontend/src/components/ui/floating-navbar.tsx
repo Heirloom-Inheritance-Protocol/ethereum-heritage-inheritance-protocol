@@ -1,6 +1,4 @@
 "use client";
-import { cn } from "@/lib/utils";
-import { usePrivy } from "@privy-io/react-auth";
 import {
   AnimatePresence,
   motion,
@@ -10,20 +8,17 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { JSX, useState } from "react";
+import type { NavItem } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 import ConnectWallet from "./ConnectWallet";
 
 export const FloatingNav = ({
   navItems,
   className,
 }: {
-  navItems: {
-    name: string;
-    link: string;
-    icon?: JSX.Element;
-  }[];
+  navItems: Array<NavItem & { icon?: JSX.Element }>;
   className?: string;
 }) => {
-  const { ready, authenticated, user, logout, login } = usePrivy();
   const { scrollYProgress } = useScroll();
   const pathname = usePathname();
 
@@ -84,20 +79,6 @@ export const FloatingNav = ({
               </Link>
             );
           })}
-          {authenticated && (
-            <Link
-              href={"/dashboard"}
-              className={cn(
-                "relative dark:text-neutral-50 items-center flex space-x-1 text-neutral-600 dark:hover:text-neutral-300 hover:text-neutral-500 pb-1 border-b-2 transition-colors",
-                pathname === "/dashboard"
-                  ? "border-blue-500 dark:border-blue-400 text-neutral-900 dark:text-white"
-                  : "border-transparent",
-              )}
-            >
-              {/* <span className="block sm:hidden">{icon}</span> */}
-              <span className="hidden sm:block text-sm">Dashboard</span>
-            </Link>
-          )}
         </nav>
         <ConnectWallet />
       </motion.div>
