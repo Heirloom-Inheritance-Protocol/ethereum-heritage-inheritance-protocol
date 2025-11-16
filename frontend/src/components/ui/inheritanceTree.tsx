@@ -440,14 +440,12 @@ export function InheritanceTree(): JSX.Element {
           <CardContent>
             <div
               ref={svgContainerRef}
-              className="relative w-full rounded-lg bg-muted/20 p-8"
+              className="relative w-full rounded-lg bg-muted/20 p-8 overflow-auto md:overflow-visible"
               style={{ minHeight: "500px" }}
             >
               <svg
-                className="mx-auto"
-                height="500"
+                className="mx-auto w-[800px] md:w-full h-[500px]"
                 viewBox="0 0 800 500"
-                width="100%"
               >
                 {graph.links.map((link, index) => {
                   const fromNode = graph.nodeMap.get(link.from);
@@ -528,7 +526,7 @@ export function InheritanceTree(): JSX.Element {
                 </div>
               ) : null}
 
-              <div className="mt-6 flex items-center justify-center gap-6">
+              <div className="mt-6 hidden items-center justify-center gap-6 md:flex">
                 <div className="flex items-center gap-2">
                   <div
                     className="h-3 w-3 rounded-full"
@@ -550,6 +548,31 @@ export function InheritanceTree(): JSX.Element {
                   />
                   <span className="text-sm">Leaf (Final recipient)</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Mobile legend below the tree, centered */}
+            <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-3 md:hidden">
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: "rgb(96, 165, 250)" }}
+                />
+                <span className="text-xs">Root (Originator)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: "rgb(167, 139, 250)" }}
+                />
+                <span className="text-xs">Intermediate (Re-inherited)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: "rgb(52, 211, 153)" }}
+                />
+                <span className="text-xs">Leaf (Final recipient)</span>
               </div>
             </div>
 

@@ -17,13 +17,13 @@ export function WobbleCardDemo() {
             an encrypted vault that stays resilient across decades.
           </p>
         </div>
-        <Image
+        {/* <Image
           src="/linear.webp"
           width={500}
           height={500}
           alt="Heritage Inheritance Protocol dashboard preview"
           className="absolute -bottom-10 -right-4 object-contain grayscale filter rounded-2xl lg:-right-[40%]"
-        />
+        /> */}
       </WobbleCard>
 
       <WobbleCard containerClassName="relative col-span-1 min-h-[300px]">

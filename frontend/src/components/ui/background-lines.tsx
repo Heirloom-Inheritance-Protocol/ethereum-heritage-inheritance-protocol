@@ -17,12 +17,12 @@ export const BackgroundLines = ({
   return (
     <div
       className={cn(
-        "h-[20rem] md:h-screen w-full bg-white dark:bg-neutral-900",
+        "relative isolate flex min-h-[28rem] w-full flex-col items-center justify-center overflow-hidden bg-white transition-colors dark:bg-neutral-900 sm:min-h-[34rem] lg:min-h-screen",
         className,
       )}
     >
       <SVG svgOptions={svgOptions} />
-      {children}
+      <div className="relative z-10 w-full">{children}</div>
     </div>
   );
 };

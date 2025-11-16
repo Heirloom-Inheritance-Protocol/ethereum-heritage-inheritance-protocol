@@ -18,30 +18,30 @@ export function BackgroundLinesHero() {
   }
 
   return (
-    <BackgroundLines className="flex items-center justify-center w-full flex-col px-4">
-      {/* <h2 className="bg-clip-text text-transparent text-center bg-gradient-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white text-2xl md:text-4xl lg:text-7xl font-sans py-2 md:py-10 relative z-20 font-bold tracking-tight">
-        Inheritance knowledge, <br /> Heirloom Protocol.
-        </h2> */}
-      <TextGenerateEffect
-        words="Heritage Inheritance Protocol."
-        className="text-center text-[40px] md:text-5xl lg:text-6xl mb-8 w-1/2"
-      />
-      <p className="max-w-xl mx-auto text-sm md:text-lg text-neutral-700 dark:text-neutral-400 text-center pb-6">
-        Record who passed knowledge to whom on-chain, preserving lineage and
-        provenance. Encrypt content client-side and store on IPFS, enabling
-        preservation of private cultural assets without forcing public
-        disclosure.
-      </p>
-
-      {ready && authenticated ? (
-        <GlowButton
-          label="Dashboard"
-          onClick={handleNavigateDashboard}
-          className="w-full sm:w-auto"
+    <BackgroundLines className="w-full px-4 pb-8 pt-[calc(env(safe-area-inset-top)+4.5rem)] sm:pb-16 sm:pt-24 lg:py-32">
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 text-center">
+        <TextGenerateEffect
+          words="Heritage Inheritance Protocol."
+          className="w-full text-3xl leading-tight md:text-5xl lg:text-6xl"
         />
-      ) : (
-        <ConnectWallet />
-      )}
+        <p className="text-base text-neutral-700 dark:text-neutral-400 md:text-lg">
+          Record who passed knowledge to whom on-chain, preserving lineage and
+          provenance. Encrypt content client-side and store on IPFS, enabling
+          preservation of private cultural assets without forcing public
+          disclosure.
+        </p>
+        <div className="w-full max-w-md">
+          {ready && authenticated ? (
+            <GlowButton
+              label="Dashboard"
+              onClick={handleNavigateDashboard}
+              className="w-full sm:w-auto"
+            />
+          ) : (
+            <ConnectWallet />
+          )}
+        </div>
+      </div>
     </BackgroundLines>
   );
 }

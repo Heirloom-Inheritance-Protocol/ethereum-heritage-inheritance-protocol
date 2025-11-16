@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { JSX, useState } from "react";
+import { Menu, X } from "lucide-react";
 import type { NavItem } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import ConnectWallet from "./ConnectWallet";
@@ -23,6 +24,7 @@ export const FloatingNav = ({
   const pathname = usePathname();
 
   const [visible, setVisible] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useMotionValueEvent(scrollYProgress, "change", (current) => {
     // Check if current is not undefined and is a number
@@ -45,7 +47,7 @@ export const FloatingNav = ({
     <AnimatePresence mode="wait">
       <motion.div
         className={cn(
-          "flex w-full max-w-4xl fixed top-10 inset-x-0 mx-auto border border-transparent dark:border-white/[0.2] rounded-full dark:bg-black bg-white shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] z-5000 px-6 py-2 items-center justify-between",
+          "relative flex w-[calc(100%-2rem)] max-w-4xl fixed top-10 left-1/2 -translate-x-1/2 sm:left-auto sm:right-auto sm:translate-x-0 sm:inset-x-0 sm:mx-auto sm:w-full border border-transparent dark:border-white/[0.2] rounded-full dark:bg-black bg-white shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] z-5000 px-6 py-2 items-center justify-between",
           className,
         )}
         style={{
@@ -54,13 +56,16 @@ export const FloatingNav = ({
           borderRadius: "9999px",
         }}
       >
+        <span className="sm:hidden pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-medium text-neutral-900 dark:text-neutral-50">
+          Heritage Inheritance Protocol
+        </span>
         <div className="flex items-center gap-3">
           <img src="/heritage-tr.png" alt="" className="h-12 w-12 shrink-0" />
-          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
+          <span className="hidden text-sm font-medium text-neutral-900 dark:text-neutral-50 sm:block">
             Heritage Inheritance Protocol
           </span>
         </div>
-        <nav className="flex items-center gap-4">
+        <nav className="hidden sm:flex items-center gap-4">
           {navItems.map((navItem, idx: number) => {
             const isActive = pathname === navItem.link;
             return (
@@ -74,13 +79,68 @@ export const FloatingNav = ({
                     : "border-transparent",
                 )}
               >
-                <span className="block sm:hidden">{navItem.icon}</span>
-                <span className="hidden sm:block text-sm">{navItem.name}</span>
+                <span className="text-sm">{navItem.name}</span>
               </Link>
             );
           })}
         </nav>
-        <ConnectWallet />
+        <div className="hidden sm:block">
+          <ConnectWallet />
+        </div>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="sm:hidden p-2 text-neutral-600 dark:text-neutral-50 hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors cursor-pointer"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="absolute top-full left-0 right-0 mt-2 mx-4 sm:hidden bg-white dark:bg-black border border-transparent dark:border-white/[0.2] rounded-2xl shadow-lg overflow-hidden"
+              style={{
+                backdropFilter: "blur(6px) saturate(180%)",
+                backgroundColor: "rgba(17, 25, 40, 0.95)",
+              }}
+            >
+              <nav className="flex flex-col p-4 gap-2">
+                {navItems.map((navItem, idx: number) => {
+                  const isActive = pathname === navItem.link;
+                  return (
+                    <Link
+                      key={`mobile-link=${idx}`}
+                      href={navItem.link}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 rounded-lg text-neutral-600 dark:text-neutral-50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors",
+                        isActive &&
+                          "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
+                      )}
+                    >
+                      {navItem.icon && (
+                        <span className="shrink-0">{navItem.icon}</span>
+                      )}
+                      <span className="text-sm font-medium">
+                        {navItem.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+                <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                  <ConnectWallet />
+                </div>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );

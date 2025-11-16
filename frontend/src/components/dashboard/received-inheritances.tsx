@@ -282,9 +282,9 @@ export function ReceivedInheritances(): JSX.Element {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+        <div className="overflow-x-auto md:overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
           <div>
-            <table className="w-full table-fixed">
+            <table className="w-full table-fixed min-w-[900px] md:min-w-0">
               <thead>
                 <tr className="border-b border-neutral-200/50 bg-white/40 dark:border-neutral-700/50 dark:bg-white/5">
                   <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
@@ -548,9 +548,9 @@ export function ReceivedInheritances(): JSX.Element {
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+          <div className="overflow-x-auto md:overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
             <div>
-              <table className="w-full table-fixed">
+              <table className="w-full table-fixed min-w-[900px] md:min-w-0">
                 <thead>
                   <tr className="border-b border-neutral-200/50 bg-white/40 dark:border-neutral-700/50 dark:bg-white/5">
                     <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">

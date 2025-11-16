@@ -100,7 +100,7 @@ export default function Home() {
   return (
     <>
       <FloatingNav navItems={MAIN_NAV_ITEMS} />
-      <div className="relative min-h-screen">
+      <div className="relative bg-white dark:bg-neutral-900 sm:min-h-screen">
         <BackgroundLinesHero />
         <ScrollIndicator targetId="content" />
       </div>
@@ -108,7 +108,7 @@ export default function Home() {
       {/* Content section to scroll to */}
       <section
         id="content"
-        className="min-h-screen bg-white dark:bg-neutral-900 py-20 px-4"
+        className="min-h-screen bg-white dark:bg-neutral-900 pt-0 pb-20 sm:py-20 px-4"
       >
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-8 text-neutral-900 dark:text-white">
@@ -185,7 +185,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             <Card className="overflow-hidden bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800">
-              <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+              <div className="aspect-4/3 bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1758874960025-85d40fde6252?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYW1pbHklMjByZWNpcGUlMjBncmFuZG1vdGhlciUyMGNvb2tpbmd8ZW58MXx8fHwxNzYzMDY2NTA0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                   alt="Family recipe tradition"
@@ -220,7 +220,7 @@ export default function Home() {
             </Card>
 
             <Card className="overflow-hidden bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800">
-              <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+              <div className="aspect-4/3 bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1575804428466-7a663f99bb81?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZ2Vub3VzJTIwb3JhbCUyMHRyYWRpdGlvbiUyMHN0b3J5dGVsbGluZ3xlbnwxfHx8fDE3NjMwNjY1MDV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                   alt="Indigenous oral traditions"
@@ -255,7 +255,7 @@ export default function Home() {
             </Card>
 
             <Card className="overflow-hidden bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800">
-              <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+              <div className="aspect-4/3 bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1759340946094-62603dedcac1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGhlcml0YWdlJTIwYXJ0aWZhY3RzJTIwbXVzZXVtfGVufDF8fHx8MTc2MzA2NjUwNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                   alt="Cultural artifacts and heritage"
@@ -290,7 +290,7 @@ export default function Home() {
             </Card>
           </div>
 
-          <Card className="p-6 bg-gradient-to-r from-neutral-100 to-neutral-50 dark:from-neutral-800/50 dark:to-neutral-900/50 border-neutral-200 dark:border-neutral-800 mt-8">
+          <Card className="p-6 bg-linear-to-r from-neutral-100 to-neutral-50 dark:from-neutral-800/50 dark:to-neutral-900/50 border-neutral-200 dark:border-neutral-800 mt-8">
             <p className="text-center text-base md:text-lg text-neutral-700 dark:text-neutral-300">
               All knowledge is{" "}
               <strong className="text-neutral-900 dark:text-white">
