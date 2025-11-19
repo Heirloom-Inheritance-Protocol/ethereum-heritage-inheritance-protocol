@@ -474,7 +474,7 @@ export function ReceivedInheritances(): JSX.Element {
                     File
                   </th>
                   <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                    Successor
+                    Successor(s)
                   </th>
                   <th className="w-[10%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Created
