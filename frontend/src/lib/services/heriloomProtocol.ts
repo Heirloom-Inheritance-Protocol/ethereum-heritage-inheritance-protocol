@@ -227,3 +227,111 @@ export async function getSuccessorInheritances(
     (inheritance) => inheritance.ipfsHash !== "0" && inheritance.ipfsHash !== "",
   );
 }
+
+/**
+ * Reinherits an existing inheritance to a new successor
+ * @param inheritanceId The ID of the inheritance to reinherit
+ * @param newSuccessor The address of the new successor
+ * @returns The new inheritance ID
+ */
+export async function reinherit(
+  inheritanceId: bigint,
+  newSuccessor: `0x${string}`,
+): Promise<bigint> {
+  const { walletClient, address } = await getWalletClient();
+
+  // Check if wallet is on the correct chain
+  const chainId = await walletClient.getChainId();
+  if (chainId !== sepolia.id) {
+    try {
+      // Request chain switch
+      await walletClient.switchChain({ id: sepolia.id });
+    } catch {
+      throw new Error(
+        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+      );
+    }
+  }
+
+  // Verify inheritance exists and get its details for debugging
+  try {
+    const inheritance = (await publicClient.readContract({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: CONTRACT_ABI,
+      functionName: "getInheritance",
+      args: [inheritanceId],
+    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
+
+    const [owner, successor, , , , , , isActive] = inheritance;
+    console.log("Inheritance details:", {
+      id: inheritanceId.toString(),
+      owner,
+      successor,
+      isActive,
+      userAddress: address,
+      isOwner: owner.toLowerCase() === address?.toLowerCase(),
+      isSuccessor: successor.toLowerCase() === address?.toLowerCase(),
+    });
+
+    if (!isActive) {
+      throw new Error("Inheritance is not active");
+    }
+
+    if (
+      owner.toLowerCase() !== address?.toLowerCase() &&
+      successor.toLowerCase() !== address?.toLowerCase()
+    ) {
+      throw new Error(
+        `You are neither the owner nor the successor of this inheritance. Owner: ${owner}, Successor: ${successor}, Your address: ${address}`,
+      );
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("You are neither")) {
+      throw error;
+    }
+    console.error("Error checking inheritance:", error);
+    // Continue anyway - let the contract revert with its own error message
+  }
+
+  // Simulate the transaction to check for errors
+  const { request } = await publicClient.simulateContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: CONTRACT_ABI,
+    functionName: "passDownInheritance",
+    args: [inheritanceId, newSuccessor],
+    account: address,
+  });
+
+  // Execute the transaction
+  const hash = await walletClient.writeContract(request);
+
+  // Wait for the transaction to be mined
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  // Parse the logs to get the new inheritance ID from the InheritancePassedDown event
+  const log = receipt.logs.find((log) => {
+    try {
+      const decoded = decodeEventLog({
+        abi: CONTRACT_ABI,
+        data: log.data,
+        topics: log.topics,
+      });
+      return decoded.eventName === "InheritancePassedDown";
+    } catch {
+      return false;
+    }
+  });
+
+  if (!log) {
+    throw new Error("InheritancePassedDown event not found in transaction logs");
+  }
+
+  const decoded = decodeEventLog({
+    abi: CONTRACT_ABI,
+    data: log.data,
+    topics: log.topics,
+  });
+
+  const args = decoded.args as unknown as { newInheritanceId: bigint };
+  return args.newInheritanceId;
+}

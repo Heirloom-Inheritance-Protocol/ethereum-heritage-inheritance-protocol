@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = "0xe2916d40d548C9Bd8a5aae2102ac487C14536B9D";
+export const CONTRACT_ADDRESS = "0x0fD193e242e3DEa37eC39DA40440431828A10C17";
 
 export const CONTRACT_ABI = [
   {
@@ -48,6 +48,18 @@ export const CONTRACT_ABI = [
         type: "string",
       },
       { indexed: false, internalType: "string", name: "tag", type: "string" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "parentInheritanceId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "generationLevel",
+        type: "uint256",
+      },
     ],
     name: "InheritanceCreated",
     type: "event",
@@ -69,6 +81,37 @@ export const CONTRACT_ABI = [
       },
     ],
     name: "InheritanceDeleted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "originalInheritanceId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "newInheritanceId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newSuccessor",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "generationLevel",
+        type: "uint256",
+      },
+    ],
+    name: "InheritancePassedDown",
     type: "event",
   },
   {
@@ -178,7 +221,34 @@ export const CONTRACT_ABI = [
       { internalType: "uint256", name: "timestamp", type: "uint256" },
       { internalType: "bool", name: "isActive", type: "bool" },
       { internalType: "bool", name: "isClaimed", type: "bool" },
+      { internalType: "uint256", name: "parentInheritanceId", type: "uint256" },
+      { internalType: "uint256", name: "generationLevel", type: "uint256" },
     ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_inheritanceId", type: "uint256" },
+    ],
+    name: "getInheritanceChain",
+    outputs: [{ internalType: "uint256[]", name: "chain", type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_inheritanceId", type: "uint256" },
+    ],
+    name: "getInheritanceChildren",
+    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "string", name: "_ipfsHash", type: "string" }],
+    name: "getInheritancesByIpfsHash",
+    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
     stateMutability: "view",
     type: "function",
   },
@@ -190,9 +260,28 @@ export const CONTRACT_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      { internalType: "uint256", name: "_inheritanceId", type: "uint256" },
+    ],
+    name: "getRootInheritance",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [{ internalType: "address", name: "_successor", type: "address" }],
     name: "getSuccessorInheritances",
     outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "uint256", name: "", type: "uint256" },
+    ],
+    name: "inheritanceChildren",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
@@ -216,7 +305,19 @@ export const CONTRACT_ABI = [
       { internalType: "uint256", name: "timestamp", type: "uint256" },
       { internalType: "bool", name: "isActive", type: "bool" },
       { internalType: "bool", name: "isClaimed", type: "bool" },
+      { internalType: "uint256", name: "parentInheritanceId", type: "uint256" },
+      { internalType: "uint256", name: "generationLevel", type: "uint256" },
     ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "string", name: "", type: "string" },
+      { internalType: "uint256", name: "", type: "uint256" },
+    ],
+    name: "ipfsHashToInheritances",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
@@ -228,6 +329,16 @@ export const CONTRACT_ABI = [
     name: "ownerInheritances",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_inheritanceId", type: "uint256" },
+      { internalType: "address", name: "_newSuccessor", type: "address" },
+    ],
+    name: "passDownInheritance",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {

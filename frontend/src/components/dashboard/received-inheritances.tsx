@@ -1,14 +1,16 @@
 "use client";
 
-import { JSX, useState, useEffect } from "react";
+import { JSX, useState, useEffect, useRef } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   getOwnerInheritances,
   getSuccessorInheritances,
   deleteInheritance,
+  reinherit,
   InheritanceData,
 } from "@/lib/services/heriloomProtocol";
 import { decryptFileForBoth } from "@/lib/encryption";
+import { isAddress } from "viem";
 
 export function ReceivedInheritances(): JSX.Element {
   const { user } = usePrivy();
@@ -22,6 +24,11 @@ export function ReceivedInheritances(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<bigint | null>(null);
   const [downloadingId, setDownloadingId] = useState<bigint | null>(null);
+  const [reinheritingId, setReinheritingId] = useState<bigint | null>(null);
+  const reinheritingIdRef = useRef<bigint | null>(null);
+  const [showReinheritModal, setShowReinheritModal] = useState(false);
+  const [newSuccessorAddress, setNewSuccessorAddress] = useState("");
+  const [reinheritingLoading, setReinheritingLoading] = useState(false);
 
   // Fetch inheritances from blockchain
   useEffect(() => {
@@ -54,16 +61,62 @@ export function ReceivedInheritances(): JSX.Element {
     fetchInheritances();
   }, [user?.wallet?.address]);
 
-  // Show all inheritances
-  const receivedAssets = inheritances;
+  // Group inheritances by IPFS hash to show multiple successors in same row
+  interface GroupedInheritance {
+    ipfsHash: string;
+    fileName: string;
+    tag: string;
+    fileSize: bigint;
+    timestamp: bigint;
+    owner: string;
+    successors: Array<{
+      id: bigint;
+      address: string;
+      timestamp: bigint;
+      isActive: boolean;
+      isClaimed: boolean;
+    }>;
+  }
+
+  const groupedByIpfs = inheritances.reduce((acc, inheritance) => {
+    const key = inheritance.ipfsHash;
+    if (!acc[key]) {
+      acc[key] = {
+        ipfsHash: inheritance.ipfsHash,
+        fileName: inheritance.fileName,
+        tag: inheritance.tag,
+        fileSize: inheritance.fileSize,
+        timestamp: inheritance.timestamp,
+        owner: inheritance.owner,
+        successors: [],
+      };
+    }
+    acc[key].successors.push({
+      id: inheritance.id,
+      address: inheritance.successor,
+      timestamp: inheritance.timestamp,
+      isActive: inheritance.isActive,
+      isClaimed: inheritance.isClaimed,
+    });
+    // Use the earliest timestamp
+    if (inheritance.timestamp < acc[key].timestamp) {
+      acc[key].timestamp = inheritance.timestamp;
+    }
+    return acc;
+  }, {} as Record<string, GroupedInheritance>);
+
+  const receivedAssets = Object.values(groupedByIpfs);
 
   // Filter by search query
-  const filteredAssets = receivedAssets.filter((inheritance) => {
+  const filteredAssets = receivedAssets.filter((group) => {
     const query = searchQuery.toLowerCase();
+    const allSuccessors = group.successors
+      .map((s) => s.address.toLowerCase())
+      .join(" ");
     return (
-      inheritance.fileName.toLowerCase().includes(query) ||
-      inheritance.tag.toLowerCase().includes(query) ||
-      inheritance.successor.toLowerCase().includes(query)
+      group.fileName.toLowerCase().includes(query) ||
+      group.tag.toLowerCase().includes(query) ||
+      allSuccessors.includes(query)
     );
   });
 
@@ -186,6 +239,136 @@ export function ReceivedInheritances(): JSX.Element {
     }
   }
 
+  function handleOpenReinheritModal(inheritanceId: bigint) {
+    console.log("Opening modal with inheritance ID:", inheritanceId);
+    reinheritingIdRef.current = inheritanceId;
+    setReinheritingId(inheritanceId);
+    setNewSuccessorAddress("");
+    setShowReinheritModal(true);
+    console.log("Ref set to:", reinheritingIdRef.current);
+  }
+
+  function handleCloseReinheritModal() {
+    console.log("Closing modal - clearing ref and state");
+    setShowReinheritModal(false);
+    setReinheritingId(null);
+    reinheritingIdRef.current = null;
+    setNewSuccessorAddress("");
+  }
+
+  async function handleReinherit() {
+    console.log(
+      "handleReinherit called - ref:",
+      reinheritingIdRef.current,
+      "state:",
+      reinheritingId,
+    );
+    const inheritanceId = reinheritingIdRef.current ?? reinheritingId;
+    console.log(
+      "Final inheritanceId:",
+      inheritanceId,
+      "typeof:",
+      typeof inheritanceId,
+    );
+
+    const trimmedAddress = newSuccessorAddress.trim();
+
+    // Check if inheritanceId is null or undefined (but allow 0n which is a valid BigInt)
+    if (inheritanceId === null || inheritanceId === undefined) {
+      console.error(
+        "No inheritance ID found! ref:",
+        reinheritingIdRef.current,
+        "state:",
+        reinheritingId,
+      );
+      alert(
+        "Error: No inheritance selected. Please close and reopen the modal.",
+      );
+      return;
+    }
+
+    if (!trimmedAddress) {
+      alert("Please enter a successor address");
+      return;
+    }
+
+    // Validate address format using viem's isAddress
+    if (!isAddress(trimmedAddress)) {
+      alert(
+        "Please enter a valid Ethereum address (0x followed by 40 hex characters)",
+      );
+      return;
+    }
+
+    // Check if user is trying to reinherit to themselves
+    const userAddress = user?.wallet?.address?.toLowerCase();
+    if (userAddress && trimmedAddress.toLowerCase() === userAddress) {
+      alert(
+        "You cannot reinherit to yourself. Please enter a different wallet address.",
+      );
+      return;
+    }
+
+    // Find the inheritance being reinherited and check if new successor already exists
+    const allInheritancesList = [...inheritances, ...successorInheritances];
+    const currentInheritance = allInheritancesList.find(
+      (inh) => inh.id === inheritanceId,
+    );
+
+    if (currentInheritance) {
+      // Get all inheritances with the same IPFS hash
+      const sameIpfsInheritances = allInheritancesList.filter(
+        (inh) =>
+          inh.ipfsHash.toLowerCase() ===
+          currentInheritance.ipfsHash.toLowerCase(),
+      );
+
+      // Check if the new successor address already exists as a successor for this IPFS hash
+      const alreadySuccessor = sameIpfsInheritances.some(
+        (inh) => inh.successor.toLowerCase() === trimmedAddress.toLowerCase(),
+      );
+
+      if (alreadySuccessor) {
+        alert(
+          "This address is already a successor for this inheritance. Please enter a different wallet address.",
+        );
+        return;
+      }
+    }
+
+    try {
+      setReinheritingLoading(true);
+      const newInheritanceId = await reinherit(
+        inheritanceId,
+        trimmedAddress as `0x${string}`,
+      );
+
+      // Refresh the inheritances list
+      if (user?.wallet?.address) {
+        const [ownerData, successorData] = await Promise.all([
+          getOwnerInheritances(user.wallet.address as `0x${string}`),
+          getSuccessorInheritances(user.wallet.address as `0x${string}`),
+        ]);
+
+        setInheritances(ownerData);
+        setSuccessorInheritances(successorData);
+      }
+
+      alert(
+        `Inheritance successfully passed down! New inheritance ID: ${newInheritanceId.toString()}`,
+      );
+      handleCloseReinheritModal();
+    } catch (error) {
+      console.error("Reinherit failed:", error);
+      alert(
+        "Failed to reinherit. Please try again. Error: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
+    } finally {
+      setReinheritingLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -284,7 +467,7 @@ export function ReceivedInheritances(): JSX.Element {
       ) : (
         <div className="overflow-x-auto md:overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
           <div>
-            <table className="w-full table-fixed min-w-[900px] md:min-w-0">
+            <table className="w-full table-auto min-w-[900px] md:min-w-0">
               <thead>
                 <tr className="border-b border-neutral-200/50 bg-white/40 dark:border-neutral-700/50 dark:bg-white/5">
                   <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
@@ -299,21 +482,18 @@ export function ReceivedInheritances(): JSX.Element {
                   <th className="w-[8%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Size
                   </th>
-                  <th className="w-[18%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                  <th className="px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Tags
                   </th>
-                  <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                    Status
-                  </th>
-                  <th className="w-[15%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                  <th className="w-[20%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200/30 dark:divide-neutral-700/30">
-                {filteredAssets.map((inheritance) => (
+                {filteredAssets.map((group) => (
                   <tr
-                    key={inheritance.id.toString()}
+                    key={group.ipfsHash}
                     className="bg-transparent transition hover:bg-white/40 dark:hover:bg-white/10"
                   >
                     <td className="px-4 py-5">
@@ -328,32 +508,72 @@ export function ReceivedInheritances(): JSX.Element {
                         </svg>
                         <div className="flex items-center min-w-0 text-sm font-normal text-neutral-900 dark:text-white">
                           <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                            {splitFileName(inheritance.fileName).name}
+                            {splitFileName(group.fileName).name}
                           </span>
                           <span className="shrink-0">
-                            {splitFileName(inheritance.fileName).extension}
+                            {splitFileName(group.fileName).extension}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-5">
-                      <span className="font-mono text-sm text-neutral-700 dark:text-neutral-300">
-                        {shortenAddress(inheritance.successor)}
+                      <div className="flex flex-col gap-1.5">
+                        {group.successors.map((successor, idx) => {
+                          const inheritanceData = inheritances.find(
+                            (inh) => inh.id === successor.id,
+                          );
+                          return (
+                            <div
+                              key={successor.id.toString()}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="font-mono text-sm text-neutral-700 dark:text-neutral-300">
+                                {shortenAddress(successor.address)}
+                              </span>
+                              {inheritanceData && (
+                                <button
+                                  onClick={() => handleDelete(successor.id)}
+                                  disabled={deletingId === successor.id}
+                                  className="inline-flex items-center justify-center rounded-lg bg-red-600 p-1 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600 cursor-pointer"
+                                  aria-label="Delete inheritance"
+                                >
+                                  {deletingId === successor.id ? (
+                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                  ) : (
+                                    <svg
+                                      className="h-3 w-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
+                                    </svg>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-4 py-5">
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                        {formatDate(group.timestamp)}
                       </span>
                     </td>
                     <td className="px-4 py-5">
                       <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                        {formatDate(inheritance.timestamp)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-5">
-                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                        {formatSize(inheritance.fileSize)}
+                        {formatSize(group.fileSize)}
                       </span>
                     </td>
                     <td className="px-4 py-5">
                       <div className="flex flex-wrap gap-1">
-                        {inheritance.tag.split(",").map((tag, tagIndex) => (
+                        {group.tag.split(",").map((tag, tagIndex) => (
                           <span
                             key={tagIndex}
                             className="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
@@ -364,66 +584,27 @@ export function ReceivedInheritances(): JSX.Element {
                       </div>
                     </td>
                     <td className="px-4 py-5">
-                      {inheritance.isClaimed ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20 dark:bg-orange-900/20 dark:text-orange-400 dark:ring-orange-400/30">
-                          <svg
-                            className="h-3 w-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Claimed
-                        </span>
-                      ) : inheritance.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-400/30">
-                          <svg
-                            className="h-3 w-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Available
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-400/30">
-                          <svg
-                            className="h-3 w-3"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Revoked
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-5">
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() =>
-                            handleDownloadAndDecrypt(
-                              inheritance,
-                              user?.wallet?.address || "",
-                            )
-                          }
-                          disabled={downloadingId === inheritance.id}
+                          onClick={() => {
+                            // Use the first active inheritance for download
+                            const firstActive =
+                              group.successors.find((s) => s.isActive) ||
+                              group.successors[0];
+                            const inheritanceData = inheritances.find(
+                              (inh) => inh.id === firstActive.id,
+                            );
+                            if (inheritanceData) {
+                              handleDownloadAndDecrypt(
+                                inheritanceData,
+                                user?.wallet?.address || "",
+                              );
+                            }
+                          }}
+                          disabled={downloadingId !== null}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white cursor-pointer"
                         >
-                          {downloadingId === inheritance.id ? (
+                          {downloadingId !== null ? (
                             <>
                               <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent dark:border-neutral-900 dark:border-t-transparent" />
                               Decrypting...
@@ -447,30 +628,46 @@ export function ReceivedInheritances(): JSX.Element {
                             </>
                           )}
                         </button>
-                        <button
-                          onClick={() => handleDelete(inheritance.id)}
-                          disabled={deletingId === inheritance.id}
-                          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600 cursor-pointer"
-                          aria-label="Delete inheritance"
-                        >
-                          {deletingId === inheritance.id ? (
-                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          ) : (
-                            <svg
-                              className="h-3.5 w-3.5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                        {(() => {
+                          // Get the first active successor for reinherit
+                          const firstActiveSuccessor = group.successors.find(
+                            (s) => s.isActive,
+                          );
+                          if (!firstActiveSuccessor) return null;
+                          const inheritanceData = inheritances.find(
+                            (inh) => inh.id === firstActiveSuccessor.id,
+                          );
+                          if (!inheritanceData) return null;
+                          return (
+                            <button
+                              onClick={() =>
+                                handleOpenReinheritModal(
+                                  firstActiveSuccessor.id,
+                                )
+                              }
+                              disabled={
+                                reinheritingId === firstActiveSuccessor.id
+                              }
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
+                              aria-label="Reinherit"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          )}
-                        </button>
+                              <svg
+                                className="h-3.5 w-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                />
+                              </svg>
+                              Reinherit
+                            </button>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
@@ -550,7 +747,7 @@ export function ReceivedInheritances(): JSX.Element {
         ) : (
           <div className="overflow-x-auto md:overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-lg backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
             <div>
-              <table className="w-full table-fixed min-w-[900px] md:min-w-0">
+              <table className="w-full table-auto min-w-[900px] md:min-w-0">
                 <thead>
                   <tr className="border-b border-neutral-200/50 bg-white/40 dark:border-neutral-700/50 dark:bg-white/5">
                     <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
@@ -565,13 +762,10 @@ export function ReceivedInheritances(): JSX.Element {
                     <th className="w-[8%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       Size
                     </th>
-                    <th className="w-[18%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                    <th className="px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       Tags
                     </th>
-                    <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Status
-                    </th>
-                    <th className="w-[15%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                    <th className="w-[20%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       Actions
                     </th>
                   </tr>
@@ -628,54 +822,6 @@ export function ReceivedInheritances(): JSX.Element {
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className="px-4 py-5">
-                        {inheritance.isClaimed ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-400/30">
-                            <svg
-                              className="h-3 w-3"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Claimed
-                          </span>
-                        ) : inheritance.isActive ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-400/30">
-                            <svg
-                              className="h-3 w-3"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Available
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-400/30">
-                            <svg
-                              className="h-3 w-3"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Revoked
-                          </span>
-                        )}
                       </td>
                       <td className="px-4 py-5">
                         <div className="flex items-center gap-1.5">
@@ -737,6 +883,32 @@ export function ReceivedInheritances(): JSX.Element {
                               </>
                             )}
                           </button>
+                          <button
+                            onClick={() =>
+                              handleOpenReinheritModal(inheritance.id)
+                            }
+                            disabled={
+                              reinheritingId === inheritance.id ||
+                              !inheritance.isActive
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
+                            aria-label="Reinherit"
+                          >
+                            <svg
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13 7l5 5m0 0l-5 5m5-5H6"
+                              />
+                            </svg>
+                            Reinherit
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -747,6 +919,96 @@ export function ReceivedInheritances(): JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Reinherit Modal */}
+      {showReinheritModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={handleCloseReinheritModal}
+        >
+          <div
+            className="relative m-4 w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all dark:bg-neutral-900 animate-in fade-in-0 zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={handleCloseReinheritModal}
+              className="absolute right-4 top-4 rounded-full p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+              aria-label="Close modal"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Modal content */}
+            <div className="px-6 pb-6 pt-12">
+              <h3 className="mb-4 text-xl font-bold text-neutral-900 dark:text-white">
+                Reinherit Asset
+              </h3>
+              <p className="mb-6 text-sm text-neutral-600 dark:text-neutral-400">
+                Enter the address of the new successor to pass down this
+                inheritance.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="new-successor"
+                    className="mb-2 block text-sm font-medium text-neutral-900 dark:text-white"
+                  >
+                    New Successor Address
+                  </label>
+                  <input
+                    id="new-successor"
+                    type="text"
+                    placeholder="0x..."
+                    value={newSuccessorAddress}
+                    onChange={(e) => setNewSuccessorAddress(e.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 bg-white py-3 px-4 text-sm text-neutral-900 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:border-neutral-600 dark:bg-white/10 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-blue-500 dark:focus:ring-blue-700"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseReinheritModal}
+                    disabled={reinheritingLoading}
+                    className="flex-1 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReinherit}
+                    disabled={
+                      reinheritingLoading || !newSuccessorAddress.trim()
+                    }
+                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
+                    {reinheritingLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Processing...
+                      </div>
+                    ) : (
+                      "Reinherit"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
