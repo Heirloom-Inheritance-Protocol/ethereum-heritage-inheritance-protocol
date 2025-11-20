@@ -1,12 +1,12 @@
 import { decodeEventLog } from "viem";
-import { sepolia } from "viem/chains";
+import { scrollSepolia } from "viem/chains";
 import { getWalletClient, publicClient } from "../viem";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
-import { addMemberToVault, createVault } from "../../services/relayerAPI";
+import { addMemberToVault } from "../../services/relayerAPI";
 import { Identity } from "@semaphore-protocol/identity";
 
 interface CreateInheritanceParams {
-  successor: `0x${string}`;
+  successorCommitment: bigint;
   ipfsHash: string;
   tag: string;
   fileName: string;
@@ -16,7 +16,7 @@ interface CreateInheritanceParams {
 export interface InheritanceData {
   id: bigint;
   owner: string;
-  successor: string;
+  successorCommitment: bigint;
   ipfsHash: string;
   tag: string;
   fileName: string;
@@ -31,7 +31,7 @@ export interface InheritanceData {
  * @returns The inheritance ID
  */
 export async function createInheritance({
-  successor,
+  successorCommitment,
   ipfsHash,
   tag,
   fileName,
@@ -41,13 +41,13 @@ export async function createInheritance({
 
   // Check if wallet is on the correct chain
   const chainId = await walletClient.getChainId();
-  if (chainId !== sepolia.id) {
+  if (chainId !== scrollSepolia.id) {
     try {
       // Request chain switch
-      await walletClient.switchChain({ id: sepolia.id });
+      await walletClient.switchChain({ id: scrollSepolia.id });
     } catch {
       throw new Error(
-        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+        `Please switch your wallet to Scroll Sepolia network. Current chain: ${chainId}, Required: ${scrollSepolia.id}`,
       );
     }
   }
@@ -57,7 +57,7 @@ export async function createInheritance({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "createInheritance",
-    args: [successor, ipfsHash, tag, fileName, fileSize],
+    args: [successorCommitment, ipfsHash, tag, fileName, fileSize],
     account: address,
   });
 
@@ -192,13 +192,13 @@ export async function deleteInheritance(
 
   // Check if wallet is on the correct chain
   const chainId = await walletClient.getChainId();
-  if (chainId !== sepolia.id) {
+  if (chainId !== scrollSepolia.id) {
     try {
       // Request chain switch
-      await walletClient.switchChain({ id: sepolia.id });
+      await walletClient.switchChain({ id: scrollSepolia.id });
     } catch {
       throw new Error(
-        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+        `Please switch your wallet to Scroll Sepolia network. Current chain: ${chainId}, Required: ${scrollSepolia.id}`,
       );
     }
   }
@@ -244,12 +244,12 @@ export async function getOwnerInheritances(
       abi: CONTRACT_ABI,
       functionName: "getInheritance",
       args: [id],
-    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean];
+    })) as [string, bigint, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
 
     return {
       id,
       owner: data[0],
-      successor: data[1],
+      successorCommitment: data[1],
       ipfsHash: data[2],
       tag: data[3],
       fileName: data[4],
@@ -269,19 +269,19 @@ export async function getOwnerInheritances(
 }
 
 /**
- * Fetches all inheritances where the address is the successor (beneficiary)
- * @param successorAddress The address of the successor
+ * Fetches all inheritances where the commitment is the successor (beneficiary)
+ * @param successorCommitment The Semaphore commitment hash of the successor
  * @returns Array of inheritance data, filtered to exclude deleted ones
  */
 export async function getSuccessorInheritances(
-  successorAddress: `0x${string}`,
+  successorCommitment: string | bigint,
 ): Promise<InheritanceData[]> {
-  // Get array of inheritance IDs where the address is the successor
+  // Get array of inheritance IDs where the commitment is the successor
   const inheritanceIds = (await publicClient.readContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "getSuccessorInheritances",
-    args: [successorAddress],
+    args: [BigInt(successorCommitment)],
   })) as bigint[];
 
   // Fetch details for each inheritance
@@ -291,12 +291,12 @@ export async function getSuccessorInheritances(
       abi: CONTRACT_ABI,
       functionName: "getInheritance",
       args: [id],
-    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean];
+    })) as [string, bigint, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
 
     return {
       id,
       owner: data[0],
-      successor: data[1],
+      successorCommitment: data[1],
       ipfsHash: data[2],
       tag: data[3],
       fileName: data[4],
@@ -318,24 +318,24 @@ export async function getSuccessorInheritances(
 /**
  * Reinherits an existing inheritance to a new successor
  * @param inheritanceId The ID of the inheritance to reinherit
- * @param newSuccessor The address of the new successor
+ * @param newSuccessorCommitment The Semaphore commitment hash of the new successor
  * @returns The new inheritance ID
  */
 export async function reinherit(
   inheritanceId: bigint,
-  newSuccessor: `0x${string}`,
+  newSuccessorCommitment: bigint,
 ): Promise<bigint> {
   const { walletClient, address } = await getWalletClient();
 
   // Check if wallet is on the correct chain
   const chainId = await walletClient.getChainId();
-  if (chainId !== sepolia.id) {
+  if (chainId !== scrollSepolia.id) {
     try {
       // Request chain switch
-      await walletClient.switchChain({ id: sepolia.id });
+      await walletClient.switchChain({ id: scrollSepolia.id });
     } catch {
       throw new Error(
-        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+        `Please switch your wallet to Scroll Sepolia network. Current chain: ${chainId}, Required: ${scrollSepolia.id}`,
       );
     }
   }
@@ -347,33 +347,29 @@ export async function reinherit(
       abi: CONTRACT_ABI,
       functionName: "getInheritance",
       args: [inheritanceId],
-    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
+    })) as [string, bigint, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
 
-    const [owner, successor, , , , , , isActive] = inheritance;
+    const [owner, successorCommitment, , , , , , isActive] = inheritance;
     console.log("Inheritance details:", {
       id: inheritanceId.toString(),
       owner,
-      successor,
+      successorCommitment: successorCommitment.toString(),
       isActive,
       userAddress: address,
       isOwner: owner.toLowerCase() === address?.toLowerCase(),
-      isSuccessor: successor.toLowerCase() === address?.toLowerCase(),
     });
 
     if (!isActive) {
       throw new Error("Inheritance is not active");
     }
 
-    if (
-      owner.toLowerCase() !== address?.toLowerCase() &&
-      successor.toLowerCase() !== address?.toLowerCase()
-    ) {
+    if (owner.toLowerCase() !== address?.toLowerCase()) {
       throw new Error(
-        `You are neither the owner nor the successor of this inheritance. Owner: ${owner}, Successor: ${successor}, Your address: ${address}`,
+        `Only the owner can pass down this inheritance. Owner: ${owner}, Your address: ${address}`,
       );
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes("You are neither")) {
+    if (error instanceof Error && error.message.includes("Only the owner")) {
       throw error;
     }
     console.error("Error checking inheritance:", error);
@@ -385,7 +381,7 @@ export async function reinherit(
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "passDownInheritance",
-    args: [inheritanceId, newSuccessor],
+    args: [inheritanceId, newSuccessorCommitment],
     account: address,
   });
 

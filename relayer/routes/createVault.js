@@ -3,7 +3,7 @@ import {Contract, JsonRpcProvider, Wallet} from "ethers";
 import {readFileSync} from "fs";
 import {fileURLToPath} from "url";
 import {dirname, join} from "path";
-import { SEMAPHORE_CONTRACT_ADDRESS, HERILOOM_CONTRACT_ADDRESS } from "../config/constants.js";
+import { HERILOOM_CONTRACT_ADDRESS } from "../config/constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 const router = express.Router();
 
 // Load contract ABI
-const abiPath = join(__dirname, "../../out/zkheriloom3.sol/zkHeriloom3.json");
+const abiPath = join(__dirname, "../../out/zkheriloom3.sol/ZkHeriloom3.json");
 let HeriloomArtifact;
 try {
     HeriloomArtifact = JSON.parse(readFileSync(abiPath, "utf8"));
@@ -21,7 +21,7 @@ try {
 }
 
 router.post("/", async (req, res) => {
-    console.log("🔵 ========== CREATE VAULT ROUTE CALLED ==========");
+    console.log("🔵 ========== CREATE INHERITANCE (VAULT) ROUTE CALLED ==========");
 
     try {
         // Validate that the ABI is loaded
@@ -32,13 +32,32 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // Configure provider and signer
+        // Extract parameters from request body
+        const { owner, successorCommitment, ipfsHash, tag, fileName, fileSize } = req.body;
+
+        // Validate required parameters
+        if (!owner || !successorCommitment || !ipfsHash || !tag || !fileName || fileSize === undefined) {
+            return res.status(400).json({
+                error: "Missing required parameters",
+                details: "Required: owner, successorCommitment, ipfsHash, tag, fileName, fileSize",
+            });
+        }
+
+        console.log("📋 Inheritance details:");
+        console.log("   Owner:", owner);
+        console.log("   Successor Commitment:", successorCommitment);
+        console.log("   IPFS Hash:", ipfsHash);
+        console.log("   Tag:", tag);
+        console.log("   File Name:", fileName);
+        console.log("   File Size:", fileSize);
+
+        // Configure provider and signer (relayer pays gas)
         const provider = new JsonRpcProvider(process.env.RPC_URL);
         const signer = new Wallet(process.env.PRIVATE_KEY, provider);
-        console.log("✅ Provider and signer configured");
-        console.log("   Signer address:", signer.address);
+        console.log("✅ Relayer configured");
+        console.log("   Relayer address:", signer.address);
 
-        // Verify signer balance
+        // Verify relayer balance
         const balance = await provider.getBalance(signer.address);
         console.log("   Relayer balance:", balance.toString(), "wei");
 
@@ -49,26 +68,24 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // Note: Vaults are Semaphore groups - they're the same thing
-        // Vaults are typically created automatically when creating an inheritance
-        // This route creates a vault (group) directly via Semaphore if needed
-        // For most use cases, vaults are created through createInheritance
-        
-        // Use Semaphore contract directly to create a group (vault = group)
-        const semaphoreABI = [
-            {
-                inputs: [],
-                name: "createGroup",
-                outputs: [{name: "", type: "uint256"}],
-                stateMutability: "nonpayable",
-                type: "function",
-            },
-        ];
+        // Create contract instance
+        const heriloomContract = new Contract(
+            HERILOOM_CONTRACT_ADDRESS,
+            HeriloomArtifact.abi,
+            signer
+        );
 
-        const semaphoreContract = new Contract(SEMAPHORE_CONTRACT_ADDRESS, semaphoreABI, signer);
-        
-        console.log("🔵 Creating vault in Semaphore...");
-        const transaction = await semaphoreContract.createGroup();
+        console.log("🔵 Creating inheritance on blockchain (this also creates the vault)...");
+
+        // Call createInheritance function (relayer pays gas, creates inheritance + vault)
+        const transaction = await heriloomContract.createInheritance(
+            successorCommitment,
+            ipfsHash,
+            tag,
+            fileName,
+            fileSize
+        );
+
         console.log("✅ Transaction sent successfully");
         console.log("   Transaction hash:", transaction.hash);
 
@@ -76,41 +93,81 @@ router.post("/", async (req, res) => {
         console.log("✅ Transaction confirmed!");
         console.log("   Block number:", receipt.blockNumber);
 
-        // Parse GroupCreated event to get the vault ID
+        // Parse events to get inheritance ID and vault ID
         const { Interface } = await import("ethers");
+        const InheritanceCreatedEventAbi =
+            "event InheritanceCreated(uint256 indexed inheritanceId, address indexed owner, uint256 indexed successorCommitment, string ipfsHash, string tag, uint256 parentInheritanceId, uint256 generationLevel)";
         const GroupCreatedEventAbi = "event GroupCreated(uint256 indexed groupId)";
-        const iface = new Interface([GroupCreatedEventAbi]);
-        
+
+        const inheritanceIface = new Interface([InheritanceCreatedEventAbi]);
+        const groupIface = new Interface([GroupCreatedEventAbi]);
+
+        let inheritanceId = null;
         let vaultId = null;
+
+        // Get Semaphore address for event filtering
+        const semaphoreAddress = (await heriloomContract.semaphore()).toLowerCase();
+        console.log("🔍 Semaphore contract address:", semaphoreAddress);
+
+        // Parse all logs to find both InheritanceCreated and GroupCreated events
         for (const log of receipt.logs) {
-            if (log.address.toLowerCase() === SEMAPHORE_CONTRACT_ADDRESS.toLowerCase()) {
+            // Check for InheritanceCreated event
+            if (log.address.toLowerCase() === HERILOOM_CONTRACT_ADDRESS.toLowerCase()) {
                 try {
-                    const parsed = iface.parseLog({
+                    const parsed = inheritanceIface.parseLog({
                         topics: log.topics,
-                        data: log.data
+                        data: log.data,
                     });
-                    
-                    if (parsed && parsed.name === "GroupCreated") {
-                        vaultId = parsed.args.groupId.toString();
-                        console.log("✅ Vault created with ID:", vaultId);
-                        break;
+
+                    if (parsed && parsed.name === "InheritanceCreated") {
+                        inheritanceId = parsed.args.inheritanceId.toString();
+                        console.log("✅ Inheritance created with ID:", inheritanceId);
                     }
                 } catch (parseError) {
-                    continue;
+                    // Not an InheritanceCreated event, continue
+                }
+            }
+
+            // Check for GroupCreated event from Semaphore
+            if (log.address.toLowerCase() === semaphoreAddress) {
+                try {
+                    const parsed = groupIface.parseLog({
+                        topics: log.topics,
+                        data: log.data,
+                    });
+
+                    if (parsed && parsed.name === "GroupCreated") {
+                        vaultId = parsed.args.groupId.toString();
+                        console.log("✅ Vault (Semaphore group) created with ID:", vaultId);
+                    }
+                } catch (parseError) {
+                    // Not a GroupCreated event, continue
                 }
             }
         }
 
+        if (!inheritanceId) {
+            console.warn("⚠️  InheritanceCreated event not found");
+        }
+
         if (!vaultId) {
-            console.warn("⚠️  GroupCreated event not found, vault ID unknown");
+            console.warn("⚠️  GroupCreated event not found, trying to query from contract...");
+            try {
+                const userData = await heriloomContract.userDatabase(signer.address);
+                vaultId = userData[0].toString();
+                console.log("✅ Vault ID retrieved from userDatabase:", vaultId);
+            } catch (error) {
+                console.error("❌ Could not retrieve vault ID:", error.message);
+            }
         }
 
         return res.status(200).json({
             success: true,
             transactionHash: receipt.hash,
             blockNumber: receipt.blockNumber,
+            inheritanceId: inheritanceId,
             vaultId: vaultId,
-            message: "Vault created successfully. Note: Vaults are typically created automatically when creating an inheritance."
+            message: "Inheritance and vault created successfully (gasless transaction via relayer)"
         });
 
     } catch (error) {

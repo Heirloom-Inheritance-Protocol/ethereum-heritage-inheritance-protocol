@@ -6,14 +6,13 @@ import { usePrivy } from "@privy-io/react-auth";
 import { cn } from "@/lib/utils";
 import { SuccessModal } from "@/components/ui/success-modal";
 import {
-  createInheritance,
   getOwnerInheritances,
   InheritanceData,
   generateCommitmentFromWallet,
 } from "@/lib/services/heriloomProtocol";
 import { encryptFileForBoth } from "@/lib/encryption";
 import { CreateInheritanceButton } from "@/components/CreateGroup";
-import { createVault, addMemberToVault } from "@/services/relayerAPI";
+import { createInheritance, addMemberToVault } from "@/services/relayerAPI";
 
 interface InheritanceFormProps {
   className?: string;
@@ -138,51 +137,55 @@ export function InheritanceForm({
       });
 
       if (!response.ok) {
-        throw new Error("Upload failed");
+        const errorData = await response.json();
+        console.error("Upload failed:", errorData);
+        throw new Error(`Upload failed: ${errorData.error || 'Unknown error'}`);
       }
 
       const data = await response.json();
 
+      if (!data.hash) {
+        console.error("No IPFS hash in response:", data);
+        throw new Error("Upload failed: No IPFS hash returned");
+      }
+
       console.log("Encrypted file uploaded to Arkiv:", data);
 
-      // 3. Create vault (group) for this inheritance
-      console.log("Creating vault for inheritance...");
-      const vaultResult = await createVault();
-      const vaultId = vaultResult.vaultId;
-      console.log("✅ Vault created with ID:", vaultId);
-
-      // 4. Generate commitment hash from owner (creator) wallet address
-      console.log("Generating commitment hash from owner wallet:", user.wallet.address);
+      // 3. Generate commitment hashes BEFORE creating inheritance
+      console.log("Generating commitment for the owner");
       const ownerCommitment = generateCommitmentFromWallet(user.wallet.address);
       console.log("✅ Owner commitment generated:", ownerCommitment);
+
+      console.log("Generating commitment for the successor");
+      const successorCommitment = generateCommitmentFromWallet(successorWallet);
+      console.log("✅ Successor commitment generated:", successorCommitment);
+
+      // 4. Create inheritance via relayer (gasless for user, creates inheritance + vault)
+      setUploadingStage("blockchain");
+      console.log("Creating inheritance vault, please wait...");
+      const inheritanceResult = await createInheritance(
+        user.wallet.address, // owner
+        successorCommitment, // successorCommitment (NOT wallet address)
+        data.hash, // ipfsHash
+        selectedTag, // tag
+        selectedFile.name, // fileName
+        selectedFile.size // fileSize
+      );
+      console.log("✅ Inheritance created with ID:", inheritanceResult.inheritanceId);
+      console.log("✅ Vault ID:", inheritanceResult.vaultId);
+
+      const inheritanceId = BigInt(inheritanceResult.inheritanceId);
+      const vaultId = BigInt(inheritanceResult.vaultId);
 
       // 5. Add owner (creator) as first member to vault
       console.log(`Adding owner as first member to vault ${vaultId}...`);
       await addMemberToVault(ownerCommitment, Number(vaultId));
       console.log("✅ Owner added to vault as first member");
 
-      // 6. Generate commitment hash from successor wallet address
-      console.log("Generating commitment hash from successor wallet:", successorWallet);
-      const successorCommitment = generateCommitmentFromWallet(successorWallet);
-      console.log("✅ Successor commitment generated:", successorCommitment);
-
-      // 7. Add successor as second member to vault
+      // 6. Add successor as second member to vault
       console.log(`Adding successor as second member to vault ${vaultId}...`);
       await addMemberToVault(successorCommitment, Number(vaultId));
       console.log("✅ Successor added to vault");
-
-      // 6. Create inheritance on blockchain
-      setUploadingStage("blockchain");
-      console.log("Creating inheritance on blockchain...");
-      const inheritanceId = await createInheritance({
-        successor: successorWallet as `0x${string}`,
-        ipfsHash: data.hash,
-        tag: selectedTag,
-        fileName: selectedFile.name,
-        fileSize: BigInt(selectedFile.size),
-      });
-
-      console.log("Inheritance created with ID:", inheritanceId.toString());
 
       // Save to Arkiv database
       try {

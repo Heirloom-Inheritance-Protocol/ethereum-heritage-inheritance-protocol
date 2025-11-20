@@ -8,6 +8,7 @@ import {
   deleteInheritance,
   reinherit,
   InheritanceData,
+  generateCommitmentFromWallet,
 } from "@/lib/services/heriloomProtocol";
 import { decryptFileForBoth } from "@/lib/encryption";
 import { isAddress } from "viem";
@@ -80,10 +81,13 @@ export function ReceivedInheritances(): JSX.Element {
         setLoading(true);
         setError(null);
 
+        // Generate commitment from wallet address for successor query
+        const successorCommitment = generateCommitmentFromWallet(user.wallet.address);
+
         // Fetch both owner and successor inheritances in parallel
         const [ownerData, successorData] = await Promise.all([
           getOwnerInheritances(user.wallet.address as `0x${string}`),
-          getSuccessorInheritances(user.wallet.address as `0x${string}`),
+          getSuccessorInheritances(successorCommitment),
         ]);
 
         setInheritances(ownerData);
@@ -109,7 +113,7 @@ export function ReceivedInheritances(): JSX.Element {
     owner: string;
     successors: Array<{
       id: bigint;
-      address: string;
+      commitment: string;
       timestamp: bigint;
       isActive: boolean;
       isClaimed: boolean;
@@ -131,7 +135,7 @@ export function ReceivedInheritances(): JSX.Element {
     }
     acc[key].successors.push({
       id: inheritance.id,
-      address: inheritance.successor,
+      commitment: inheritance.successorCommitment.toString(),
       timestamp: inheritance.timestamp,
       isActive: inheritance.isActive,
       isClaimed: inheritance.isClaimed,
@@ -149,7 +153,7 @@ export function ReceivedInheritances(): JSX.Element {
   const filteredAssets = receivedAssets.filter((group) => {
     const query = searchQuery.toLowerCase();
     const allSuccessors = group.successors
-      .map((s) => s.address.toLowerCase())
+      .map((s) => s.commitment.toLowerCase())
       .join(" ");
     return (
       group.fileName.toLowerCase().includes(query) ||

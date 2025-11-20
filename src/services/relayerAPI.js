@@ -44,29 +44,43 @@ export async function addMemberToVault(identityCommitment, vaultId) {
 }
 
 /**
- * Create a new vault (Semaphore group) via the relayer
- * @returns {Promise<{success: boolean, transactionHash: string, blockNumber: number, vaultId: number}>}
+ * Create a new inheritance (which creates a vault) via the relayer (gasless)
+ * @param {string} owner - The owner's wallet address
+ * @param {string|BigInt} successorCommitment - Semaphore commitment hash of the successor
+ * @param {string} ipfsHash - IPFS hash of the encrypted file
+ * @param {string} tag - Category tag for the inheritance
+ * @param {string} fileName - Name of the file
+ * @param {number|string|BigInt} fileSize - Size of the file in bytes
+ * @returns {Promise<{success: boolean, transactionHash: string, blockNumber: number, inheritanceId: string, vaultId: string}>}
  */
-export async function createVault() {
+export async function createInheritance(owner, successorCommitment, ipfsHash, tag, fileName, fileSize) {
   try {
     const response = await fetch(`${RELAYER_URL}/api/vault/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        owner,
+        successorCommitment: successorCommitment.toString(),
+        ipfsHash,
+        tag,
+        fileName,
+        fileSize: fileSize.toString(),
+      }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || error.error || error.details || 'Failed to create vault');
+      throw new Error(error.message || error.error || error.details || 'Failed to create inheritance');
     }
 
     const result = await response.json();
-    console.log('✅ Vault created:', result.vaultId, result.transactionHash);
+    console.log('✅ Inheritance created via relayer:', result.inheritanceId, result.transactionHash);
 
     return result;
   } catch (error) {
-    console.error('❌ Error creating vault:', error);
+    console.error('❌ Error creating inheritance via relayer:', error);
     throw error;
   }
 }

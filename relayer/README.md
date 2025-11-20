@@ -118,7 +118,7 @@ Admin-only operations (contract admin functions).
 
 This relayer is configured for **Scroll Sepolia** testnet:
 - RPC URL: `https://sepolia-rpc.scroll.io`
-- Semaphore Contract: `0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D`
+- Semaphore Contract: `0x689B1d8FB0c64ACFEeFA6BdE1d31f215e92B6fd4`
 - Explorer: https://sepolia.scrollscan.com
 
 ## Important Note: Vaults = Groups

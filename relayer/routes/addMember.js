@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 const router = express.Router();
 
 // Load contract ABI
-const abiPath = join(__dirname, "../../out/zkheriloom3.sol/zkHeriloom3.json");
+const abiPath = join(__dirname, "../../out/zkheriloom3.sol/ZkHeriloom3.json");
 let HeriloomArtifact;
 try {
     HeriloomArtifact = JSON.parse(readFileSync(abiPath, "utf8"));
@@ -137,24 +137,12 @@ router.post("/", async (req, res) => {
 
         // Execute transaction
         console.log("🔵 Executing transaction to add member...");
-        console.log("   Calling semaphore.addMember(", vaultId, ",", identityCommitment, ") directly...");
+        console.log("   Calling heriloomContract.addMember(", vaultId, ",", identityCommitment, ") via ZkHeriloom3 contract...");
 
         try {
-            // Call Semaphore directly since the relayer is the group admin
-            const semaphoreAddMemberABI = [
-                {
-                    inputs: [
-                        {name: "groupId", type: "uint256"},
-                        {name: "identityCommitment", type: "uint256"}
-                    ],
-                    name: "addMember",
-                    outputs: [],
-                    stateMutability: "nonpayable",
-                    type: "function",
-                },
-            ];
-            const semaphoreContract = new Contract(SEMAPHORE_CONTRACT_ADDRESS, semaphoreAddMemberABI, signer);
-            const transaction = await semaphoreContract.addMember(vaultId, identityCommitment);
+            // Call ZkHeriloom3 contract's addMember function, which proxies to Semaphore
+            // The ZkHeriloom3 contract is the group admin, not the relayer
+            const transaction = await contract.addMember(vaultId, identityCommitment);
             console.log("✅ Transaction sent successfully");
             console.log("   Transaction hash:", transaction.hash);
             console.log("   Waiting for confirmation...");
