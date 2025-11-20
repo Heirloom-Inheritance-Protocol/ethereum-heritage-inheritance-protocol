@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { reinherit } from "@/lib/services/heriloomProtocol";
 import { addMemberToVault } from "@/services/relayerAPI";
 import { Identity } from "@semaphore-protocol/identity";
+import { useVault } from "@/context/VaultContext";
 
 interface AddBeneficiaryProps {
   onBeneficiaryAdded?: (address: string) => void;
@@ -26,6 +27,7 @@ export default function AddBeneficiaryButton({
   showCondition = true,
 }: AddBeneficiaryProps) {
   const { user } = usePrivy();
+  const { selectedVaultId } = useVault();
   const [showForm, setShowForm] = useState(false);
   const [beneficiaryAddress, setBeneficiaryAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +70,13 @@ export default function AddBeneficiaryButton({
         inheritanceId !== null &&
         inheritanceId !== undefined
       ) {
-        const newInheritanceId = await reinherit(inheritanceId, trimmedAddress);
+        const newSuccessorIdentity = new Identity(trimmedAddress);
+        const newSuccessorCommitment = newSuccessorIdentity.commitment;
+
+        const newInheritanceId = await reinherit(
+          inheritanceId,
+          newSuccessorCommitment,
+        );
 
         // Call the callback if provided
         if (onBeneficiaryAdded) {
@@ -80,8 +88,11 @@ export default function AddBeneficiaryButton({
         );
       } else {
         // Handle add mode - add member to vault via relayer
-        if (vaultId === null || vaultId === undefined) {
-          throw new Error("Vault ID is required to add a member");
+        // Use the vaultId prop if provided, otherwise fall back to global selected vault
+        const activeVaultId = vaultId ?? (selectedVaultId ? parseInt(selectedVaultId) : null);
+
+        if (activeVaultId === null || activeVaultId === undefined) {
+          throw new Error("Vault ID is required to add a member. Please select a vault first.");
         }
 
         // Generate identity commitment for the beneficiary
@@ -91,7 +102,7 @@ export default function AddBeneficiaryButton({
         const identityCommitment = identity.commitment;
 
         // Add member to vault via relayer
-        const result = await addMemberToVault(identityCommitment, vaultId);
+        const result = await addMemberToVault(identityCommitment, activeVaultId);
 
         console.log("✅ Member added to vault:", result);
 
@@ -101,7 +112,7 @@ export default function AddBeneficiaryButton({
         }
 
         alert(
-          `Beneficiary successfully added to vault! Transaction: ${result.transactionHash}`,
+          `Beneficiary successfully added to vault #${activeVaultId}! Transaction: ${result.transactionHash}`,
         );
       }
 
