@@ -91,7 +91,7 @@ This also leaves traditions vulnerable to distortion or erasure by intermediarie
 
 - **Arkiv & IPFS-based decentralized storage**
 
-  - sss
+  - for strage of data, we use Arkiv and IPFS
 
 - **On-chain lineage**
 
