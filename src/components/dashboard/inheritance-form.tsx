@@ -26,6 +26,7 @@ interface Asset {
     lastModified: number;
   };
   tag: string;
+  description: string;
   ipfsHash: string;
   ipfsUrl: string;
 }
@@ -54,6 +55,7 @@ export function InheritanceForm({
   const [selectedTag, setSelectedTag] = useState<string>("");
   const [successorWallet, setSuccessorWallet] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [description, setDescription] = useState<string>("");
   const [inheritances, setInheritances] = useState<InheritanceData[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingStage, setUploadingStage] = useState<
@@ -166,9 +168,23 @@ export function InheritanceForm({
           fileSize: selectedFile.size,
           fileType: selectedFile.type,
           tag: selectedTag,
+          description: description,
           ipfsHash: data.hash,
           ipfsUrl: data.url,
           createdAt: new Date().toISOString(),
+        });
+
+        console.log("📝 Asset data being pushed to database:", {
+          inheritanceId: inheritanceId.toString(),
+          owner: user.wallet.address,
+          successor: successorWallet,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          fileType: selectedFile.type,
+          tag: selectedTag,
+          description: description,
+          ipfsHash: data.hash,
+          ipfsUrl: data.url,
         });
 
         const arkivResponse = await fetch("/api/arkiv", {
@@ -190,7 +206,10 @@ export function InheritanceForm({
 
         if (arkivResponse.ok) {
           const arkivData = await arkivResponse.json();
-          console.log("Asset saved to Arkiv:", arkivData);
+          console.log("✅ Asset saved to Arkiv:", arkivData);
+          console.log(
+            "📦 Asset with description pushed to database successfully",
+          );
         } else {
           console.warn("Failed to save to Arkiv, but inheritance was created");
         }
@@ -222,6 +241,7 @@ export function InheritanceForm({
           lastModified: selectedFile.lastModified,
         },
         tag: selectedTag,
+        description: description,
         ipfsHash: data.hash,
         ipfsUrl: data.url,
       };
@@ -234,6 +254,7 @@ export function InheritanceForm({
       setSuccessorWallet("");
       setSelectedFile(null);
       setSelectedTag("");
+      setDescription("");
     } catch (error) {
       console.error("Error creating inheritance:", error);
       alert("Error creating inheritance: " + (error as Error).message);
@@ -252,6 +273,7 @@ export function InheritanceForm({
     successorWallet.trim() !== "" &&
     selectedFile !== null &&
     selectedTag !== "" &&
+    description.trim() !== "" &&
     !isSameAsCurrentWallet;
 
   return (
@@ -356,6 +378,25 @@ export function InheritanceForm({
             </select>
             <p className="text-xs text-neutral-600 dark:text-neutral-200">
               Select a tag type to categorize your inheritance
+            </p>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-neutral-800 dark:text-white">
+              Description
+            </span>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Enter a description for this inheritance asset..."
+              rows={4}
+              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:border-neutral-600 dark:bg-white/10 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-neutral-500 dark:focus:ring-neutral-700"
+              aria-label="Asset description"
+              name="description"
+              required
+            />
+            <p className="text-xs text-neutral-600 dark:text-neutral-200">
+              Provide a detailed description of this inheritance asset
             </p>
           </label>
 
@@ -479,6 +520,17 @@ export function InheritanceForm({
                   {successAsset.tag.charAt(0).toUpperCase() +
                     successAsset.tag.slice(1)}
                 </span>
+              </div>
+
+              <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                  Description
+                </p>
+                <p className="text-sm text-neutral-900 dark:text-white">
+                  {successAsset.description}
+                </p>
               </div>
 
               <div className="h-px bg-neutral-200 dark:bg-neutral-700" />
