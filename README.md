@@ -303,8 +303,7 @@ Security limitations:
 
 ## Short Term
 
-- Deploy to mainnet and expand across multiple L2s.
-- Integrate with EAS so other protocols can reuse inheritance lineage permissionlessly.
+- Integrate with EAS so other protocols/organizations can reuse inheritance lineage permissionlessly.
 
 ## Medium Term
 
