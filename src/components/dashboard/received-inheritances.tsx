@@ -142,7 +142,7 @@ export function ReceivedInheritances(): JSX.Element {
         // Filter owner inheritances (where user is the owner)
         const ownerData = arkivData.database
           .filter((entry: any) =>
-            entry.owner?.toLowerCase() === user.wallet.address.toLowerCase()
+            entry.owner?.toLowerCase() === user?.wallet?.address?.toLowerCase()
           )
           .map((entry: any) => ({
             id: BigInt(entry.inheritanceId || 0),
@@ -160,7 +160,7 @@ export function ReceivedInheritances(): JSX.Element {
         // Filter successor inheritances (where user is the successor)
         const successorData = arkivData.database
           .filter((entry: any) =>
-            entry.successor?.toLowerCase() === user.wallet.address.toLowerCase()
+            entry.successor?.toLowerCase() === user?.wallet?.address?.toLowerCase()
           )
           .map((entry: any) => ({
             id: BigInt(entry.inheritanceId || 0),
@@ -540,7 +540,7 @@ export function ReceivedInheritances(): JSX.Element {
         if (arkivData.success && arkivData.database) {
           const ownerData = arkivData.database
             .filter((entry: any) =>
-              entry.owner?.toLowerCase() === user.wallet.address.toLowerCase()
+              entry.owner?.toLowerCase() === user?.wallet?.address?.toLowerCase()
             )
             .map((entry: any) => ({
               id: BigInt(entry.inheritanceId || 0),
@@ -557,7 +557,7 @@ export function ReceivedInheritances(): JSX.Element {
 
           const successorData = arkivData.database
             .filter((entry: any) =>
-              entry.successor?.toLowerCase() === user.wallet.address.toLowerCase()
+              entry.successor?.toLowerCase() === user?.wallet?.address?.toLowerCase()
             )
             .map((entry: any) => ({
               id: BigInt(entry.inheritanceId || 0),
