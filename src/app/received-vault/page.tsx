@@ -8,6 +8,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { FloatingNav } from "@/components/ui/floating-navbar";
 import { ReceivedInheritances } from "@/components/dashboard/received-inheritances";
 import { MAIN_NAV_ITEMS } from "@/lib/navigation";
+import AddBeneficiary from "@/components/AddBeneficiary";
 
 export default function ReceivedVaultPage(): JSX.Element {
   const router = useRouter();
@@ -48,6 +49,7 @@ export default function ReceivedVaultPage(): JSX.Element {
               </p>
             </header>
             <ReceivedInheritances />
+            <AddBeneficiary />
           </section>
         </div>
       </main>
