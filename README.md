@@ -116,6 +116,7 @@ Pass down proprietary methods, investment strategies, or specialized expertise p
 ### System Components
 
 **Frontend (Next.js + Privy + viem)**
+
 - File encryption/decryption (Web Crypto API)
 - IPFS upload/download
 - Smart contract interactions
@@ -123,6 +124,7 @@ Pass down proprietary methods, investment strategies, or specialized expertise p
 - Wallet authentication via Privy
 
 **Smart Contracts (Scroll Sepolia / Solidity)**
+
 - [zkheriloom3.sol](src/contract/zkheriloom3.sol) - Main inheritance contract
 - Integration with Semaphore Protocol for ZK proofs
 - Stores inheritance metadata
@@ -130,11 +132,13 @@ Pass down proprietary methods, investment strategies, or specialized expertise p
 - Tracks lineage relationships
 
 **Relayer Service (Node.js + Express)**
+
 - Facilitates Semaphore Protocol interactions
 - Manages commitment hashes for privacy preservation
 - Handles merkle tree operations
 
 **Storage Layer**
+
 - **IPFS:** Encrypted file storage
 - **Arkiv:** Merkle tree data and IPFS CID records
 
@@ -158,8 +162,6 @@ User → Frontend (Next.js) → Smart Contract (zkheriloom3) → Semaphore Proto
 
 ---
 
-
-
 ## 📖 User Flows
 
 ### 1. Creating an Inheritance (Originator)
@@ -167,7 +169,6 @@ User → Frontend (Next.js) → Smart Contract (zkheriloom3) → Semaphore Proto
 <img width="814" height="780" alt="image" src="https://github.com/user-attachments/assets/37d357ec-621d-46ea-9807-c7f92191c971" />
 
 <img width="1697" height="905" alt="Screenshot 2025-11-20 at 15 40 04" src="https://github.com/user-attachments/assets/21458ecc-343a-406f-ad6b-f3f87baa33ff" />
-
 
 **1-0. Connect Wallet**  
 Connect your wallet to the app.  
@@ -197,9 +198,7 @@ Uploaded inheritance entries can always be accessed and searched under the **Vau
 
 ### 2. Receiving an Inheritance (Successor)
 
-
 <img width="1720" height="955" alt="Screenshot 2025-11-20 at 15 46 50" src="https://github.com/user-attachments/assets/1f478320-5e22-48bf-abf7-ca31fda624a1" />
-
 
 **2-0. Connect Wallet**  
 The chosen successor connects using the **same wallet address** registered by the originator.
@@ -319,12 +318,14 @@ ramen-protocol/
 ## 🛠️ Tech Stack
 
 ### Blockchain & Smart Contracts
+
 - **Network:** Scroll Sepolia
 - **Smart Contracts:** Solidity 0.8.30
 - **Development Framework:** Foundry
 - **ZK Protocol:** Semaphore Protocol v4.14.0
 
 ### Frontend
+
 - **Framework:** Next.js 16 + React 19
 - **Language:** TypeScript
 - **Web3 Integration:** viem v2.39+
@@ -333,15 +334,18 @@ ramen-protocol/
 - **Animations:** Framer Motion
 
 ### Storage & Infrastructure
+
 - **Decentralized Storage:** IPFS + Arkiv Network SDK
 - **Encryption:** Web Crypto API (AES-256-GCM, PBKDF2)
 
 ### Backend Services
+
 - **Relayer:** Node.js + Express
 - **API Framework:** Express.js with CORS
 - **Blockchain Library:** ethers.js v6
 
 ### Development Tools
+
 - **Package Manager:** pnpm 10+
 - **Linting:** ESLint
 - **Environment Management:** dotenv
@@ -359,28 +363,33 @@ ramen-protocol/
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/Heirloom-Inheritance-Protocol/ethereum-heritage-inheritance-protocol.git
 cd ethereum-heritage-inheritance-protocol
 ```
 
 2. **Install dependencies**
+
 ```bash
 pnpm install
 ```
 
 3. **Set up environment variables**
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
 4. **Run the development server**
+
 ```bash
 pnpm dev
 ```
 
 5. **Run the relayer (in a separate terminal)**
+
 ```bash
 cd relayer
 npm install
@@ -414,11 +423,13 @@ forge script src/contract/script/zkheriloom3.s.sol --rpc-url scroll_sepolia --br
 ### Medium Term
 
 **AI Integration**
+
 - Automatically estimate cultural/economic importance scores for inheritances
 - Auto-tag inherited data for improved discoverability
 - Algorithmic matching of inheritors and successors
 
 **Funding Mechanisms**
+
 - Integrate Gitcoin stack for donation and grant-based preservation funding
 - Run dedicated funding rounds for cultural asset preservation
 - Collaborate with local governments and cultural institutions for real-world deployments
