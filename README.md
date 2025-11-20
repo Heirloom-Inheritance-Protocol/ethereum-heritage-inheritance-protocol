@@ -361,18 +361,6 @@ Security limitations:
 
 ---
 
-# Demo
-
-**Main Repository Link**  
-https://github.com/Heirloom-Inheritance-Protocol
-
-**Demo / Deployment Link**  
-https://heirloom-inheritance-protocol.vercel.app/
-
-#　 Deck / Presentation
-https://docs.google.com/presentation/d/1dZ1V8BSY7JjxjKgjzIl1uxYEoeBCLIvdFmhdvrNZLak/edit?usp=sharing
-
----
 
 # Next Steps
 
