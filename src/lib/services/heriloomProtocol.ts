@@ -1,10 +1,12 @@
 import { decodeEventLog } from "viem";
-import { sepolia } from "viem/chains";
+import { scrollSepolia } from "viem/chains";
 import { getWalletClient, publicClient } from "../viem";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
+import { addMemberToVault } from "../../services/relayerAPI";
+import { Identity } from "@semaphore-protocol/identity";
 
 interface CreateInheritanceParams {
-  successor: `0x${string}`;
+  successorCommitment: bigint;
   ipfsHash: string;
   tag: string;
   fileName: string;
@@ -14,7 +16,7 @@ interface CreateInheritanceParams {
 export interface InheritanceData {
   id: bigint;
   owner: string;
-  successor: string;
+  successorCommitment: bigint;
   ipfsHash: string;
   tag: string;
   fileName: string;
@@ -29,7 +31,7 @@ export interface InheritanceData {
  * @returns The inheritance ID
  */
 export async function createInheritance({
-  successor,
+  successorCommitment,
   ipfsHash,
   tag,
   fileName,
@@ -39,13 +41,13 @@ export async function createInheritance({
 
   // Check if wallet is on the correct chain
   const chainId = await walletClient.getChainId();
-  if (chainId !== sepolia.id) {
+  if (chainId !== scrollSepolia.id) {
     try {
       // Request chain switch
-      await walletClient.switchChain({ id: sepolia.id });
+      await walletClient.switchChain({ id: scrollSepolia.id });
     } catch {
       throw new Error(
-        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+        `Please switch your wallet to Scroll Sepolia network. Current chain: ${chainId}, Required: ${scrollSepolia.id}`,
       );
     }
   }
@@ -55,7 +57,7 @@ export async function createInheritance({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "createInheritance",
-    args: [successor, ipfsHash, tag, fileName, fileSize],
+    args: [successorCommitment, ipfsHash, tag, fileName, fileSize],
     account: address,
   });
 
@@ -90,7 +92,92 @@ export async function createInheritance({
   });
 
   const args = decoded.args as unknown as { inheritanceId: bigint };
-  return args.inheritanceId;
+  const inheritanceId = args.inheritanceId;
+
+  // Note: Vault creation and member addition now happens during IPFS upload
+  // The successor is added to the vault before creating the inheritance
+  // This enables zero-knowledge proofs for the inheritance vault
+
+  return inheritanceId;
+}
+
+/**
+ * Gets the vault ID for a user address
+ * @param userAddress The user's wallet address
+ * @returns The vault ID or null if not found
+ */
+export async function getVaultIdForUser(
+  userAddress: `0x${string}`,
+): Promise<bigint | null> {
+  try {
+    const userData = (await publicClient.readContract({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: CONTRACT_ABI,
+      functionName: "userDatabase",
+      args: [userAddress],
+    })) as [bigint, bigint, bigint, bigint];
+
+    const vaultId = userData[0]; // vaultID is the first element
+    return vaultId !== BigInt(0) ? vaultId : null;
+  } catch (error) {
+    console.error("Error getting vault ID:", error);
+    return null;
+  }
+}
+
+/**
+ * Generates a commitment hash from a wallet address
+ * Creates a deterministic Semaphore identity from the wallet address
+ * @param walletAddress - The wallet address to generate commitment from
+ * @returns The commitment hash as a string
+ */
+export function generateCommitmentFromWallet(walletAddress: string): string {
+  // Create a deterministic identity from the wallet address
+  // This allows the successor to recreate their identity later by signing with their wallet
+  const identity = new Identity(walletAddress);
+  return identity.commitment.toString();
+}
+
+/**
+ * Gets identity commitment from localStorage
+ * @returns The identity commitment string or null
+ */
+function getIdentityCommitmentFromStorage(): string | null {
+  if (typeof window === "undefined") return null;
+  
+  try {
+    const identityData = localStorage.getItem("semaphoreIdentity");
+    if (!identityData) return null;
+    
+    const identity = JSON.parse(identityData);
+    return identity.commitment || null;
+  } catch (error) {
+    console.error("Error reading identity from storage:", error);
+    return null;
+  }
+}
+
+/**
+ * Adds a member to a vault using the relayer
+ * @param userAddress The user's wallet address to get their vault
+ * @param identityCommitment The identity commitment to add (optional, will try to get from storage)
+ * @returns Promise that resolves when member is added
+ */
+export async function addMemberToUserVault(
+  userAddress: `0x${string}`,
+  identityCommitment?: string,
+): Promise<void> {
+  const vaultId = await getVaultIdForUser(userAddress);
+  if (!vaultId || vaultId === BigInt(0)) {
+    throw new Error("No vault found for user. Create an inheritance first.");
+  }
+
+  const commitment = identityCommitment || getIdentityCommitmentFromStorage();
+  if (!commitment) {
+    throw new Error("No identity commitment found. Please create a Semaphore identity first.");
+  }
+
+  await addMemberToVault(commitment, Number(vaultId));
 }
 
 /**
@@ -105,13 +192,13 @@ export async function deleteInheritance(
 
   // Check if wallet is on the correct chain
   const chainId = await walletClient.getChainId();
-  if (chainId !== sepolia.id) {
+  if (chainId !== scrollSepolia.id) {
     try {
       // Request chain switch
-      await walletClient.switchChain({ id: sepolia.id });
+      await walletClient.switchChain({ id: scrollSepolia.id });
     } catch {
       throw new Error(
-        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+        `Please switch your wallet to Scroll Sepolia network. Current chain: ${chainId}, Required: ${scrollSepolia.id}`,
       );
     }
   }
@@ -157,12 +244,12 @@ export async function getOwnerInheritances(
       abi: CONTRACT_ABI,
       functionName: "getInheritance",
       args: [id],
-    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean];
+    })) as [string, bigint, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
 
     return {
       id,
       owner: data[0],
-      successor: data[1],
+      successorCommitment: data[1],
       ipfsHash: data[2],
       tag: data[3],
       fileName: data[4],
@@ -182,19 +269,19 @@ export async function getOwnerInheritances(
 }
 
 /**
- * Fetches all inheritances where the address is the successor (beneficiary)
- * @param successorAddress The address of the successor
+ * Fetches all inheritances where the commitment is the successor (beneficiary)
+ * @param successorCommitment The Semaphore commitment hash of the successor
  * @returns Array of inheritance data, filtered to exclude deleted ones
  */
 export async function getSuccessorInheritances(
-  successorAddress: `0x${string}`,
+  successorCommitment: string | bigint,
 ): Promise<InheritanceData[]> {
-  // Get array of inheritance IDs where the address is the successor
+  // Get array of inheritance IDs where the commitment is the successor
   const inheritanceIds = (await publicClient.readContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "getSuccessorInheritances",
-    args: [successorAddress],
+    args: [BigInt(successorCommitment)],
   })) as bigint[];
 
   // Fetch details for each inheritance
@@ -204,12 +291,12 @@ export async function getSuccessorInheritances(
       abi: CONTRACT_ABI,
       functionName: "getInheritance",
       args: [id],
-    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean];
+    })) as [string, bigint, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
 
     return {
       id,
       owner: data[0],
-      successor: data[1],
+      successorCommitment: data[1],
       ipfsHash: data[2],
       tag: data[3],
       fileName: data[4],
@@ -231,24 +318,24 @@ export async function getSuccessorInheritances(
 /**
  * Reinherits an existing inheritance to a new successor
  * @param inheritanceId The ID of the inheritance to reinherit
- * @param newSuccessor The address of the new successor
+ * @param newSuccessorCommitment The Semaphore commitment hash of the new successor
  * @returns The new inheritance ID
  */
 export async function reinherit(
   inheritanceId: bigint,
-  newSuccessor: `0x${string}`,
+  newSuccessorCommitment: bigint,
 ): Promise<bigint> {
   const { walletClient, address } = await getWalletClient();
 
   // Check if wallet is on the correct chain
   const chainId = await walletClient.getChainId();
-  if (chainId !== sepolia.id) {
+  if (chainId !== scrollSepolia.id) {
     try {
       // Request chain switch
-      await walletClient.switchChain({ id: sepolia.id });
+      await walletClient.switchChain({ id: scrollSepolia.id });
     } catch {
       throw new Error(
-        `Please switch your wallet to Sepolia network. Current chain: ${chainId}, Required: ${sepolia.id}`,
+        `Please switch your wallet to Scroll Sepolia network. Current chain: ${chainId}, Required: ${scrollSepolia.id}`,
       );
     }
   }
@@ -260,33 +347,29 @@ export async function reinherit(
       abi: CONTRACT_ABI,
       functionName: "getInheritance",
       args: [inheritanceId],
-    })) as [string, string, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
+    })) as [string, bigint, string, string, string, bigint, bigint, boolean, boolean, bigint, bigint];
 
-    const [owner, successor, , , , , , isActive] = inheritance;
+    const [owner, successorCommitment, , , , , , isActive] = inheritance;
     console.log("Inheritance details:", {
       id: inheritanceId.toString(),
       owner,
-      successor,
+      successorCommitment: successorCommitment.toString(),
       isActive,
       userAddress: address,
       isOwner: owner.toLowerCase() === address?.toLowerCase(),
-      isSuccessor: successor.toLowerCase() === address?.toLowerCase(),
     });
 
     if (!isActive) {
       throw new Error("Inheritance is not active");
     }
 
-    if (
-      owner.toLowerCase() !== address?.toLowerCase() &&
-      successor.toLowerCase() !== address?.toLowerCase()
-    ) {
+    if (owner.toLowerCase() !== address?.toLowerCase()) {
       throw new Error(
-        `You are neither the owner nor the successor of this inheritance. Owner: ${owner}, Successor: ${successor}, Your address: ${address}`,
+        `Only the owner can pass down this inheritance. Owner: ${owner}, Your address: ${address}`,
       );
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes("You are neither")) {
+    if (error instanceof Error && error.message.includes("Only the owner")) {
       throw error;
     }
     console.error("Error checking inheritance:", error);
@@ -298,7 +381,7 @@ export async function reinherit(
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: "passDownInheritance",
-    args: [inheritanceId, newSuccessor],
+    args: [inheritanceId, newSuccessorCommitment],
     account: address,
   });
 

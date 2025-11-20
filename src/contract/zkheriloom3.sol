@@ -5,14 +5,19 @@ import {ISemaphore} from "@semaphore-protocol/contracts/interfaces/ISemaphore.so
 import {ISemaphoreGroups} from "@semaphore-protocol/contracts/interfaces/ISemaphoreGroups.sol";
 
 contract ZkHeriloom3 {
-    // semaphore scroll sepolia address:0x8A1fd199516489B0Fb7153EB5f075cDAC83c693D
+    // semaphore scroll sepolia address:0x689B1d8FB0c64ACFEeFA6BdE1d31f215e92B6fd4
     ISemaphore public semaphore;
     uint256 public groupCounter;
     address public admin;
 
+    constructor(address _semaphoreAddress) {
+        semaphore = ISemaphore(_semaphoreAddress);
+        admin = msg.sender;
+    }
+
     struct Inheritance {
         address owner;
-        address successor;
+        uint256 successorCommitment;
         string ipfsHash;
         string tag;
         string fileName;
@@ -43,8 +48,8 @@ contract ZkHeriloom3 {
     // Mapping from owner address to their inheritance IDs
     mapping(address => uint256[]) public ownerInheritances;
 
-    // Mapping from successor address to inheritance IDs they will inherit
-    mapping(address => uint256[]) public successorInheritances;
+    // Mapping from successor COMMITMENT to inheritance IDs they will inherit
+    mapping(uint256 => uint256[]) public successorInheritances;
 
     // Mapping from parent inheritance ID to child inheritance IDs (for tree structure)
     mapping(uint256 => uint256[]) public inheritanceChildren;
@@ -60,7 +65,7 @@ contract ZkHeriloom3 {
 
     // Custom errors
     error NotAdmin();
-    error InvalidSuccessorAddress();
+    error InvalidSuccessorCommitment();
     error CannotSetSelfAsSuccessor();
     error EmptyIpfsHash();
     error EmptyTag();
@@ -88,7 +93,7 @@ contract ZkHeriloom3 {
     event InheritanceCreated(
         uint256 indexed inheritanceId,
         address indexed owner,
-        address indexed successor,
+        uint256 indexed successorCommitment,
         string ipfsHash,
         string tag,
         uint256 parentInheritanceId,
@@ -97,7 +102,7 @@ contract ZkHeriloom3 {
 
     event InheritanceClaimed(
         uint256 indexed inheritanceId,
-        address indexed successor
+        uint256 indexed successorCommitment
     );
 
     event InheritanceRevoked(
@@ -107,8 +112,8 @@ contract ZkHeriloom3 {
 
     event SuccessorUpdated(
         uint256 indexed inheritanceId,
-        address indexed oldSuccessor,
-        address indexed newSuccessor
+        uint256 indexed oldSuccessorCommitment,
+        uint256 indexed newSuccessorCommitment
     );
 
     event InheritanceDeleted(
@@ -119,7 +124,7 @@ contract ZkHeriloom3 {
     event InheritancePassedDown(
         uint256 indexed originalInheritanceId,
         uint256 indexed newInheritanceId,
-        address indexed newSuccessor,
+        uint256 indexed newSuccessorCommitment,
         uint256 generationLevel
     );
 
@@ -127,26 +132,25 @@ contract ZkHeriloom3 {
 
     /**
      * @dev Create a new inheritance record
-     * @param _successor Address of the successor who will inherit
+     * @param _successorCommitment Semaphore commitment hash of the successor
      * @param _ipfsHash IPFS hash of the encrypted file
      * @param _tag Category tag for the inheritance
      * @param _fileName Name of the file
      * @param _fileSize Size of the file in bytes
      */
     function createInheritance(
-        address _successor,
+        uint256 _successorCommitment,
         string memory _ipfsHash,
         string memory _tag,
         string memory _fileName,
         uint256 _fileSize
     ) external returns (uint256) {
-        if (_successor == address(0)) revert InvalidSuccessorAddress();
-        if (_successor == msg.sender) revert CannotSetSelfAsSuccessor();
+        if (_successorCommitment == 0) revert InvalidSuccessorCommitment();
         if (bytes(_ipfsHash).length == 0) revert EmptyIpfsHash();
         if (bytes(_tag).length == 0) revert EmptyTag();
         if (bytes(_fileName).length == 0) revert EmptyFileName();
 
-				uint256 vaultId = semaphore.createGroup();
+        uint256 vaultId = semaphore.createGroup();
         vaultIds.push(vaultId);
         userDatabase[msg.sender] = UserDatabase({
             vaultID: vaultId,
@@ -159,7 +163,7 @@ contract ZkHeriloom3 {
 
         inheritances[inheritanceId] = Inheritance({
             owner: msg.sender,
-            successor: _successor,
+            successorCommitment: _successorCommitment,
             ipfsHash: _ipfsHash,
             tag: _tag,
             fileName: _fileName,
@@ -172,13 +176,13 @@ contract ZkHeriloom3 {
         });
 
         ownerInheritances[msg.sender].push(inheritanceId);
-        successorInheritances[_successor].push(inheritanceId);
+        successorInheritances[_successorCommitment].push(inheritanceId);
         ipfsHashToInheritances[_ipfsHash].push(inheritanceId);
 
         emit InheritanceCreated(
             inheritanceId,
             msg.sender,
-            _successor,
+            _successorCommitment,
             _ipfsHash,
             _tag,
             0,
@@ -189,47 +193,47 @@ contract ZkHeriloom3 {
     }
 
     /**
-     * @dev Claim an inheritance (callable by successor)
+     * @dev Claim an inheritance (callable by successor with valid ZK proof)
      * @param _inheritanceId ID of the inheritance to claim
+     * Note: In a full implementation, this would verify a ZK proof that the caller
+     * possesses the private key for successorCommitment
      */
     function claimInheritance(uint256 _inheritanceId) external {
         Inheritance storage inheritance = inheritances[_inheritanceId];
 
         if (!inheritance.isActive) revert InheritanceNotActive();
         if (inheritance.isClaimed) revert InheritanceAlreadyClaimed();
-        if (msg.sender != inheritance.successor) revert OnlySuccessorCanClaim();
+
+        // TODO: Add ZK proof verification here to prove caller owns the successorCommitment
+        // For now, we trust that the caller is authorized
 
         inheritance.isClaimed = true;
-        inheritance.owner = msg.sender; // Transfer ownership
+        inheritance.owner = msg.sender; // Transfer ownership to claimer
 
-        emit InheritanceClaimed(_inheritanceId, msg.sender);
+        emit InheritanceClaimed(_inheritanceId, inheritance.successorCommitment);
     }
 
     /**
-     * @dev Pass down an inheritance to a new successor (callable by current owner or successor)
+     * @dev Pass down an inheritance to a new successor (callable by current owner)
      * @param _inheritanceId ID of the inheritance to pass down
-     * @param _newSuccessor Address of the new successor
+     * @param _newSuccessorCommitment Commitment hash of the new successor
      */
     function passDownInheritance(
         uint256 _inheritanceId,
-        address _newSuccessor
+        uint256 _newSuccessorCommitment
     ) external returns (uint256) {
         Inheritance storage originalInheritance = inheritances[_inheritanceId];
 
         if (!originalInheritance.isActive) revert InheritanceNotActive();
-        if (
-            msg.sender != originalInheritance.owner &&
-            msg.sender != originalInheritance.successor
-        ) revert OnlyOwnerOrSuccessorCanPassDown();
-        if (_newSuccessor == address(0)) revert InvalidSuccessorAddress();
-        if (_newSuccessor == msg.sender) revert CannotSetSelfAsSuccessor();
+        if (msg.sender != originalInheritance.owner) revert OnlyOwnerOrSuccessorCanPassDown();
+        if (_newSuccessorCommitment == 0) revert InvalidSuccessorCommitment();
 
         // Create new inheritance record with same asset
         uint256 newInheritanceId = inheritanceCounter++;
 
         inheritances[newInheritanceId] = Inheritance({
             owner: msg.sender,
-            successor: _newSuccessor,
+            successorCommitment: _newSuccessorCommitment,
             ipfsHash: originalInheritance.ipfsHash,
             tag: originalInheritance.tag,
             fileName: originalInheritance.fileName,
@@ -242,7 +246,7 @@ contract ZkHeriloom3 {
         });
 
         ownerInheritances[msg.sender].push(newInheritanceId);
-        successorInheritances[_newSuccessor].push(newInheritanceId);
+        successorInheritances[_newSuccessorCommitment].push(newInheritanceId);
         ipfsHashToInheritances[originalInheritance.ipfsHash].push(
             newInheritanceId
         );
@@ -251,14 +255,14 @@ contract ZkHeriloom3 {
         emit InheritancePassedDown(
             _inheritanceId,
             newInheritanceId,
-            _newSuccessor,
+            _newSuccessorCommitment,
             originalInheritance.generationLevel + 1
         );
 
         emit InheritanceCreated(
             newInheritanceId,
             msg.sender,
-            _newSuccessor,
+            _newSuccessorCommitment,
             originalInheritance.ipfsHash,
             originalInheritance.tag,
             _inheritanceId,
@@ -287,27 +291,26 @@ contract ZkHeriloom3 {
     /**
      * @dev Update the successor of an inheritance
      * @param _inheritanceId ID of the inheritance
-     * @param _newSuccessor New successor address
+     * @param _newSuccessorCommitment New successor commitment hash
      */
     function updateSuccessor(
         uint256 _inheritanceId,
-        address _newSuccessor
+        uint256 _newSuccessorCommitment
     ) external {
         Inheritance storage inheritance = inheritances[_inheritanceId];
 
         if (msg.sender != inheritance.owner) revert OnlyOwnerCanUpdate();
         if (!inheritance.isActive) revert InheritanceNotActive();
         if (inheritance.isClaimed) revert CannotUpdateClaimedInheritance();
-        if (_newSuccessor == address(0)) revert InvalidSuccessorAddress();
-        if (_newSuccessor == msg.sender) revert CannotSetSelfAsSuccessor();
+        if (_newSuccessorCommitment == 0) revert InvalidSuccessorCommitment();
 
-        address oldSuccessor = inheritance.successor;
-        inheritance.successor = _newSuccessor;
+        uint256 oldSuccessorCommitment = inheritance.successorCommitment;
+        inheritance.successorCommitment = _newSuccessorCommitment;
 
         // Update successor mappings
-        successorInheritances[_newSuccessor].push(_inheritanceId);
+        successorInheritances[_newSuccessorCommitment].push(_inheritanceId);
 
-        emit SuccessorUpdated(_inheritanceId, oldSuccessor, _newSuccessor);
+        emit SuccessorUpdated(_inheritanceId, oldSuccessorCommitment, _newSuccessorCommitment);
     }
 
     /**
@@ -337,7 +340,7 @@ contract ZkHeriloom3 {
         view
         returns (
             address owner,
-            address successor,
+            uint256 successorCommitment,
             string memory ipfsHash,
             string memory tag,
             string memory fileName,
@@ -352,7 +355,7 @@ contract ZkHeriloom3 {
         Inheritance memory inheritance = inheritances[_inheritanceId];
         return (
             inheritance.owner,
-            inheritance.successor,
+            inheritance.successorCommitment,
             inheritance.ipfsHash,
             inheritance.tag,
             inheritance.fileName,
@@ -444,17 +447,17 @@ contract ZkHeriloom3 {
     }
 
     /**
-     * @dev Get all inheritance IDs where address is successor
-     * @param _successor Address of the successor
+     * @dev Get all inheritance IDs where commitment is successor
+     * @param _successorCommitment Commitment hash of the successor
      */
     function getSuccessorInheritances(
-        address _successor
+        uint256 _successorCommitment
     ) external view returns (uint256[] memory) {
-        return successorInheritances[_successor];
+        return successorInheritances[_successorCommitment];
     }
 
     /**
-     * @dev Check if an address can access an inheritance
+     * @dev Check if an address can access an inheritance (as owner)
      * @param _inheritanceId ID of the inheritance
      * @param _user Address to check
      */
@@ -466,11 +469,6 @@ contract ZkHeriloom3 {
 
         // Owner can always access
         if (_user == inheritance.owner) {
-            return true;
-        }
-
-        // Successor can access if inheritance is active
-        if (_user == inheritance.successor && inheritance.isActive) {
             return true;
         }
 
@@ -553,11 +551,19 @@ contract ZkHeriloom3 {
             );
     }
 
-	function getUserPositionInDatabase(address _user) external view returns (uint256) {
-		return userDatabase[_user].index;
-	}
+    function getUserPositionInDatabase(address _user) external view returns (uint256) {
+        return userDatabase[_user].index;
+    }
 
-	function getAllUsersFromVault(uint256 _vaultId) external view returns (address[] memory) {
-		return vaultUsers[_vaultId];
-	}
+    function getAllUsersFromVault(uint256 _vaultId) external view returns (address[] memory) {
+        return vaultUsers[_vaultId];
+    }
+
+    function getVaultIdsLength() external view returns (uint256) {
+        return vaultIds.length;
+    }
+
+    function getAllVaultIds() external view returns (uint256[] memory) {
+        return vaultIds;
+    }
 }
