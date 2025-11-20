@@ -123,74 +123,11 @@ This also leaves traditions vulnerable to distortion or erasure by intermediarie
   - Stores encrypted blobs only.
   - Contract stores the `ipfsHash` as reference.
 
----
-
-## Inheritance Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        INHERITANCE FLOW                          │
-└─────────────────────────────────────────────────────────────────┘
-
-1️⃣  OWNER CREATES INHERITANCE
-   ┌──────────────┐
-   │ Select PDF   │
-   │ + Successor  │
-   └──────┬───────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │ ENCRYPT CLIENT-SIDE     │
-   │ • Use successor address │
-   │ • AES-256-GCM           │
-   │ • Generate random IV    │
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │ UPLOAD TO IPFS          │
-   │ • Encrypted file only   │
-   │ • Returns IPFS hash     │
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │ STORE ON BLOCKCHAIN     │
-   │ • IPFS hash             │
-   │ • Successor address     │
-   │ • Metadata              │
-   └─────────────────────────┘
-
-2️⃣  SUCCESSOR CLAIMS INHERITANCE
-   ┌──────────────────────────┐
-   │ Connect Wallet           │
-   │ (Must be successor)      │
-   └──────┬───────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │ VERIFY ON BLOCKCHAIN    │
-   │ • Check successor match │
-   │ • Verify not claimed    │
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │ FETCH FROM IPFS         │
-   │ • Download encrypted    │
-   │ • Extract IV + data     │
-   └──────┬──────────────────┘
-          │
-          ▼
-   ┌─────────────────────────┐
-   │ DECRYPT CLIENT-SIDE     │
-   │ • Use their address     │
-   │ • Decrypt with key      │
-   │ • Download PDF          │
-   └─────────────────────────┘
-```
+  
 
 ---
+
+
 
 # Core User Flow
 
