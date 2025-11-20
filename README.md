@@ -39,29 +39,21 @@ This structural invisibility makes preservation impossible, and countless oral t
 
 ### Causes
 1. Inheritance relationships are invisible and unverifiable.
+There is no reliable way to document who passed what to whom.
+As a result, contributions cannot be recognised, rewarded, or tracked across generations — making knowledge transmission structurally fragile.
 
-There is no trustworthy way to document who contributed to preserving a piece of knowledge or how that lineage evolved over time.
+2. Privacy, verifiability, and censorship-resistance cannot coexist today.
+There are almost no systems that allow someone to:
+prove they contributed to preserving knowledge, keep the content private, and ensure censorship-resistance, all at the same time.
+Sharing valuable secret knowledge and protecting one’s own privacy often becomes a trade-off, forcing knowledge holders to compromise on one or the other.
 
-2. Privacy and verifiability are hard to achieve together.
+3. Knowledge holders lack incentives to pass down what they know.
+When their efforts leave no trace and no recognition, motivation declines.
+Invisible transmission leads to disengagement — and disengagement accelerates cultural loss.
 
-There are very few mechanisms that let someone prove they contributed to preserving knowledge while still keeping the content private.
-In many cases, sharing valuable secret information widely and protecting one’s own privacy are trade-offs, forcing knowledge holders to choose one at the expense of the other.
-
-3. Censorship resistance is difficult without compromising confidentiality.
-
-It is hard to ensure that culturally sensitive knowledge is protected from institutional censorship while still remaining confidential and permissioned only to selected inheritors.
-
-4. Knowledge holders lack incentives to pass down what they know.
-
-Because contribution is undocumented and unrewarded, the motivation to preserve or transmit knowledge declines.
-
-5. Preservation organizations cannot identify true inheritors.
-
-Without verifiable lineage records, institutions cannot direct support or funding toward the people actually maintaining cultural continuity.
-
-6. Unrecorded knowledge is easy to distort or erase.
-
-Oral or undocumented traditions can be altered, sanitized, or erased by intermediaries or authority figures, with no verifiable original source to reference.
+4. Preservation organisations and future generations cannot identify true inheritors.
+Without verifiable lineage records, institutions cannot support or fund the people truly maintaining cultural continuity.
+This also leaves traditions vulnerable to distortion or erasure by intermediaries or authorities, with no authoritative source to reference.
 
 ## Solution
 
