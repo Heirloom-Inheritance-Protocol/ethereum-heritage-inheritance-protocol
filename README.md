@@ -39,19 +39,23 @@ This structural invisibility makes preservation impossible, and countless oral t
 
 ### Causes
 1. Inheritance relationships are invisible and unverifiable.
+
 There is no reliable way to document who passed what to whom.
 As a result, contributions cannot be recognised, rewarded, or tracked across generations — making knowledge transmission structurally fragile.
 
 2. Privacy, verifiability, and censorship-resistance cannot coexist today.
+
 There are almost no systems that allow someone to:
 prove they contributed to preserving knowledge, keep the content private, and ensure censorship-resistance, all at the same time.
 Sharing valuable secret knowledge and protecting one’s own privacy often becomes a trade-off, forcing knowledge holders to compromise on one or the other.
 
 3. Knowledge holders lack incentives to pass down what they know.
+
 When their efforts leave no trace and no recognition, motivation declines.
 Invisible transmission leads to disengagement — and disengagement accelerates cultural loss.
 
 4. Preservation organisations and future generations cannot identify true inheritors.
+
 Without verifiable lineage records, institutions cannot support or fund the people truly maintaining cultural continuity.
 This also leaves traditions vulnerable to distortion or erasure by intermediaries or authorities, with no authoritative source to reference.
 
