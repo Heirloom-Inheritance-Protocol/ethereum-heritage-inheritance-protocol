@@ -41,25 +41,21 @@ router.get('/', async (req, res) => {
     console.log('📋 Fetching vaults array...');
     console.log('   Contract:', HERILOOM_CONTRACT_ADDRESS);
 
-    // Get the number of vaults
-    const vaultIdsLength = await contract.vaultIds.length();
-    console.log('   Total vaults:', vaultIdsLength.toString());
+    // Get all vault IDs from the contract
+    const vaultIdsArray = await contract.getAllVaultIds();
+    console.log('   Total vaults:', vaultIdsArray.length);
 
-    // Get all vault IDs from the array
-    const vaults = [];
-    for (let i = 0; i < Number(vaultIdsLength); i++) {
-      const vaultId = await contract.vaultIds(i);
-      vaults.push({
-        vaultId: vaultId.toString(),
-        index: i
-      });
-    }
+    // Format vault IDs
+    const vaults = vaultIdsArray.map((vaultId, index) => ({
+      vaultId: vaultId.toString(),
+      index: index
+    }));
 
     console.log('✅ Vaults fetched successfully:', vaults);
 
     return res.status(200).json({
       success: true,
-      totalVaults: Number(vaultIdsLength),
+      totalVaults: vaults.length,
       vaults: vaults
     });
 
