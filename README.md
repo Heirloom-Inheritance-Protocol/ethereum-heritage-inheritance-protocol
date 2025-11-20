@@ -299,25 +299,26 @@ Security limitations:
 ---
 
 
-# Next Steps
+# Roadmap
 
 ## Short Term
 
 - Deploy to mainnet and expand across multiple L2s.
-- Upgrade encryption model (e.g., migrate from PBKDF2 → ECDH-based key agreement).
 - Integrate with EAS so other protocols can reuse inheritance lineage permissionlessly.
 
 ## Medium Term
 
+- **Market Place function**
+  - To enable each inheritor to monetize through their secret knowledge, we integrate Market place feature where the successor can buy the knowledge from the inheritor. Once the knowledge is sold, the revenue will be automatically distributed according to the dependency of each inheritance.
+  
 - **AI Integration**
 
   - Automatically estimate cultural/economic importance scores for each inheritance.
   - Auto-tag inherited data for better discoverability.
   - Match inheritors and successors algorithmically.
 
-- **Funding Mechanisms**
+- **Public goods Funding Mechanisms**
   - Integrate Gitcoin stack for donation and grant-based preservation funding.
   - Run funding rounds for cultural assets.
   - Collaborate with local governments and cultural institutions to test real-world deployments.
 
----
