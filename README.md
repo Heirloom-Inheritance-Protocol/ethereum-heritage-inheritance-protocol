@@ -6,9 +6,7 @@ Short concept: A tool that allows people who wish to preserve cultural assets or
 
 ### Repository / MVP / DEMO / Deck
 
-- **Product page:**
-
-- **Presentation Video:**
+- **Presentation Video:**　https://www.loom.com/share/08768e78bc7a4594a6a216b6ed8dac7d
 
 - **Deck / Presentation:** https://docs.google.com/presentation/d/1dZ1V8BSY7JjxjKgjzIl1uxYEoeBCLIvdFmhdvrNZLak/edit?usp=sharing
 
