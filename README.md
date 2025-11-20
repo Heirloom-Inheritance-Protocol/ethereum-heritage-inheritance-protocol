@@ -33,11 +33,7 @@ Short concept: A tool that allows people who wish to preserve cultural assets or
 
 # Project Description
 
-## Problem / Motivation
-
 ### Problem
-
-Problem
 
 Human knowledge and culture are built on inheritance — skills, wisdom, and traditions passed from one person to another across generations.
 Yet despite their value, there is still no secure, privacy-preserving way to pass down sensitive or secret knowledge to a chosen successor, nor any method to make these inheritance relationships visible, verifiable, and permanently traceable.
