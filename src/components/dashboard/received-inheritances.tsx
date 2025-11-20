@@ -31,6 +31,9 @@ export function ReceivedInheritances(): JSX.Element {
   const [newSuccessorAddress, setNewSuccessorAddress] = useState("");
   const [reinheritingLoading, setReinheritingLoading] = useState(false);
   const [hasIdentity, setHasIdentity] = useState(false);
+  const [descriptionMap, setDescriptionMap] = useState<
+    Record<string, string>
+  >({});
 
   // Check for identity in localStorage
   useEffect(() => {
@@ -66,6 +69,32 @@ export function ReceivedInheritances(): JSX.Element {
       window.removeEventListener("identityCreated", handleIdentityCreated);
       clearInterval(interval);
     };
+  }, []);
+
+  // Fetch descriptions from Arkiv database
+  useEffect(() => {
+    async function fetchDescriptions() {
+      try {
+        const response = await fetch("/api/arkiv?database=true");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.database && Array.isArray(data.database)) {
+            const descriptions: Record<string, string> = {};
+            data.database.forEach((entry: any) => {
+              if (entry.inheritanceId && entry.description) {
+                descriptions[entry.inheritanceId] = entry.description;
+              }
+            });
+            setDescriptionMap(descriptions);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching descriptions:", error);
+        // Don't fail the whole component if descriptions fail to load
+      }
+    }
+
+    fetchDescriptions();
   }, []);
 
   // Fetch inheritances from blockchain
@@ -104,6 +133,7 @@ export function ReceivedInheritances(): JSX.Element {
     ipfsHash: string;
     fileName: string;
     tag: string;
+    description: string;
     fileSize: bigint;
     timestamp: bigint;
     owner: string;
@@ -118,11 +148,14 @@ export function ReceivedInheritances(): JSX.Element {
 
   const groupedByIpfs = inheritances.reduce((acc, inheritance) => {
     const key = inheritance.ipfsHash;
+    const description =
+      descriptionMap[inheritance.id.toString()] || "No description";
     if (!acc[key]) {
       acc[key] = {
         ipfsHash: inheritance.ipfsHash,
         fileName: inheritance.fileName,
         tag: inheritance.tag,
+        description: description,
         fileSize: inheritance.fileSize,
         timestamp: inheritance.timestamp,
         owner: inheritance.owner,
@@ -154,6 +187,7 @@ export function ReceivedInheritances(): JSX.Element {
     return (
       group.fileName.toLowerCase().includes(query) ||
       group.tag.toLowerCase().includes(query) ||
+      group.description.toLowerCase().includes(query) ||
       allSuccessors.includes(query)
     );
   });
@@ -162,10 +196,13 @@ export function ReceivedInheritances(): JSX.Element {
   const filteredSuccessorAssets = successorInheritances.filter(
     (inheritance) => {
       const query = successorSearchQuery.toLowerCase();
+      const description =
+        descriptionMap[inheritance.id.toString()]?.toLowerCase() || "";
       return (
         inheritance.fileName.toLowerCase().includes(query) ||
         inheritance.tag.toLowerCase().includes(query) ||
-        inheritance.owner.toLowerCase().includes(query)
+        inheritance.owner.toLowerCase().includes(query) ||
+        description.includes(query)
       );
     },
   );
@@ -475,7 +512,7 @@ export function ReceivedInheritances(): JSX.Element {
           </svg>
           <input
             type="text"
-            placeholder="Search by filename, tag, or sender..."
+            placeholder="Search by filename, tag, description, or sender..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-neutral-200 bg-white py-3 pl-12 pr-4 text-sm text-neutral-900 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:border-neutral-600 dark:bg-white/10 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-blue-500 dark:focus:ring-blue-700"
@@ -519,6 +556,9 @@ export function ReceivedInheritances(): JSX.Element {
                   </th>
                   <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Successor(s)
+                  </th>
+                  <th className="w-[15%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                    Description
                   </th>
                   <th className="w-[10%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                     Created
@@ -604,6 +644,14 @@ export function ReceivedInheritances(): JSX.Element {
                           );
                         })}
                       </div>
+                    </td>
+                    <td className="px-4 py-5">
+                      <p
+                        className="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300"
+                        title={group.description}
+                      >
+                        {group.description}
+                      </p>
                     </td>
                     <td className="px-4 py-5">
                       <span className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -756,7 +804,7 @@ export function ReceivedInheritances(): JSX.Element {
           </svg>
           <input
             type="text"
-            placeholder="Search by filename, tag, or owner..."
+            placeholder="Search by filename, tag, description, or owner..."
             value={successorSearchQuery}
             onChange={(e) => setSuccessorSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-neutral-200 bg-white py-3 pl-12 pr-4 text-sm text-neutral-900 shadow-sm transition focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:border-neutral-600 dark:bg-white/10 dark:text-white dark:placeholder:text-neutral-400 dark:focus:border-purple-500 dark:focus:ring-purple-700"
@@ -802,6 +850,9 @@ export function ReceivedInheritances(): JSX.Element {
                     <th className="w-[12%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       From
                     </th>
+                    <th className="w-[15%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                      Description
+                    </th>
                     <th className="w-[10%] px-4 py-4 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       Created
                     </th>
@@ -846,6 +897,18 @@ export function ReceivedInheritances(): JSX.Element {
                         <span className="font-mono text-sm text-neutral-700 dark:text-neutral-300">
                           {shortenAddress(inheritance.owner)}
                         </span>
+                      </td>
+                      <td className="px-4 py-5">
+                        <p
+                          className="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300"
+                          title={
+                            descriptionMap[inheritance.id.toString()] ||
+                            "No description"
+                          }
+                        >
+                          {descriptionMap[inheritance.id.toString()] ||
+                            "No description"}
+                        </p>
                       </td>
                       <td className="px-4 py-5">
                         <span className="text-sm text-neutral-700 dark:text-neutral-300">
