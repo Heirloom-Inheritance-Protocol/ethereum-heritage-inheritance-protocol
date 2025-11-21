@@ -11,13 +11,13 @@ const __dirname = dirname(__filename);
 const router = express.Router();
 
 // Load contract ABI
-const abiPath = join(__dirname, "../../out/zkheriloom3.sol/ZkHeriloom3.json");
+const abiPath = join(__dirname, "../../abis/ZkHeriloom3.json");
 let HeriloomArtifact;
 try {
     HeriloomArtifact = JSON.parse(readFileSync(abiPath, "utf8"));
 } catch (error) {
     console.error("❌ Error loading contract ABI:", error.message);
-    console.error("   Make sure to compile contracts with: forge build");
+    console.error("   Make sure the ABI file exists at: abis/ZkHeriloom3.json");
 }
 
 router.post("/", async (req, res) => {

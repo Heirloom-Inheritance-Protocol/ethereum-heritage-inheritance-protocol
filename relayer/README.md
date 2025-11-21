@@ -5,12 +5,14 @@ This is the backend relayer server that handles blockchain transactions for the 
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 cd relayer
 npm install
 ```
 
 2. Create a `.env` file:
+
 ```bash
 cp .env.example .env
 ```
@@ -33,16 +35,18 @@ Before running the relayer, make sure to compile the contracts:
 forge build
 ```
 
-This generates the contract ABI at `out/zkheriloom3.sol/zkHeriloom3.json` which the relayer uses.
+This generates the contract ABI at `out/zkheriloom3.sol/ZkHeriloom3.json`. The ABI file is then copied to `abis/ZkHeriloom3.json` (which is tracked in git) for the relayer to use.
 
 ## Running the Server
 
 Development mode (with auto-reload):
+
 ```bash
 npm run dev
 ```
 
 Production mode:
+
 ```bash
 npm start
 ```
@@ -52,6 +56,7 @@ npm start
 For detailed instructions on deploying to Vercel and configuring environment variables, see [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md).
 
 **Quick Setup:**
+
 1. Push code to GitHub/GitLab/Bitbucket
 2. Import project in Vercel Dashboard (set root directory to `relayer`)
 3. Add environment variables in Vercel:
@@ -62,23 +67,28 @@ For detailed instructions on deploying to Vercel and configuring environment var
    - `HERILOOM_CONTRACT_ADDRESS` (optional, has default)
 4. Deploy!
 
-**Note:** Make sure to run `forge build` before deploying so the contract ABI files are available.
+**Note:** The contract ABI is stored in `abis/ZkHeriloom3.json` (tracked in git). If you update the contract, run `forge build` and copy the new ABI: `cp out/zkheriloom3.sol/ZkHeriloom3.json abis/ZkHeriloom3.json`
 
 ## API Endpoints
 
 ### Health Check
+
 ```
 GET /health
 ```
+
 Returns server status and configuration info.
 
 ### Create Vault
+
 ```
 POST /api/vault/create
 ```
+
 Creates a new vault. Note: Vaults are Semaphore groups (they're the same thing). Vaults are typically created automatically when creating an inheritance.
 
 ### Add Member to Vault
+
 ```
 POST /api/vault/add-member
 Content-Type: application/json
@@ -88,35 +98,45 @@ Content-Type: application/json
   "identityCommitment": "0x..."
 }
 ```
+
 Adds a user to a vault. Note: Vaults are Semaphore groups, so vaultId = groupId.
 
 ### Check Member
+
 ```
 GET /api/vault/check-member?vaultId=1&identityCommitment=0x...
 ```
+
 Checks if an identity commitment is a member of a vault.
 
 ### Get Vaults
+
 ```
 GET /api/vaults
 ```
+
 Returns all vault IDs created in the contract.
 
 ### Get Vault Members
+
 ```
 GET /api/vault/members/:vaultId
 ```
+
 Returns all members of a specific vault, including merkle tree metadata.
 
 ### Admin Operations
+
 ```
 POST /api/admin
 ```
+
 Admin-only operations (contract admin functions).
 
 ## Security Notes
 
-⚠️ **IMPORTANT**: 
+⚠️ **IMPORTANT**:
+
 - Never commit your `.env` file
 - Keep your private key secure
 - The wallet associated with the private key needs to have funds for gas
@@ -134,6 +154,7 @@ Admin-only operations (contract admin functions).
 ## Network
 
 This relayer is configured for **Scroll Sepolia** testnet:
+
 - RPC URL: `https://sepolia-rpc.scroll.io`
 - Semaphore Contract: `0x689B1d8FB0c64ACFEeFA6BdE1d31f215e92B6fd4`
 - Explorer: https://sepolia.scrollscan.com
@@ -145,6 +166,7 @@ In this protocol, **vaults and Semaphore groups are the same thing**. The contra
 ## Database
 
 The relayer uses MongoDB to store identity commitments:
+
 - Database: `HERILOOM`
 - Collection: `Commitments`
 - Stores: vaultId (which is the Semaphore groupId), identityCommitment, transactionHash, blockNumber, merkleTreeData, timestamp
